@@ -23,9 +23,11 @@
     "db:down:local": "docker-compose -f docker-compose.local.yml down",
     "db:logs:local": "docker-compose -f docker-compose.local.yml logs -f postgres",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/data-source.ts",
-    "migration:generate": "npm run typeorm -- migration:generate src/migrations/InitialMigration -p",
-    "migration:run": "npm run typeorm -- migration:run",
-    "migration:revert": "npm run typeorm -- migration:revert"
+    "sync:env": "node scripts/sync-envjs-to-dotenv.cjs",
+    "migration:generate": "npm run sync:env && dotenv -e .env -- npx ts-node ./node_modules/typeorm/cli.js -d src/data-source.cli.ts migration:generate src/migrations/AddTransactionTable",
+    "migration:run": "npm run sync:env && dotenv -e .env -- npx ts-node ./node_modules/typeorm/cli.js -d src/data-source.cli.ts migration:run",
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "export:postman": "curl http://localhost:5900/api/docs-json -o postman_collection.json"
   },
   "dependencies": {
     "@nestjs/bull": "^11.0.2",
@@ -34,9 +36,11 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^7.4.2",
     "@nestjs/typeorm": "^11.0.0",
     "bcryptjs": "^3.0.2",
     "bull": "^4.16.5",
+    "class-validator": "^0.14.2",
     "date-fns": "^4.1.0",
     "nodemailer": "^7.0.5",
     "passport": "^0.7.0",
@@ -45,6 +49,7 @@
     "redis": "^4.7.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "swagger-ui-express": "^4.6.3",
     "typeorm": "^0.3.25"
   },
   "devDependencies": {
@@ -61,6 +66,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
+    "dotenv-cli": "^9.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

@@ -1,0 +1,15 @@
+meta {
+  name: ExpenseController_groupBalances
+  type: http
+  seq: 27
+}
+
+get {
+  url: http:/localhost:5900//api/v1/expense/balances/group/:groupId
+  body: none
+  auth: none
+}
+
+params:path {
+  groupId: 
+}

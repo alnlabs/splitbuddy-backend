@@ -4,6 +4,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { NotificationModule } from './notification/notification.module';
+import { ExpenseModule } from './expense/expense.module';
+import { CategoryModule } from './category/category.module';
+import { PaymentMethodModule } from './payment-method/payment-method.module';
+import { GroupModule } from './group/group.module';
+import { GroupMemberModule } from './group-member/group-member.module';
 // @ts-ignore
 const env = require('../env.js');
 
@@ -22,6 +27,11 @@ const env = require('../env.js');
     }),
     AuthModule,
     NotificationModule,
+    ExpenseModule,
+    CategoryModule,
+    PaymentMethodModule,
+    GroupModule,
+    GroupMemberModule,
   ],
   controllers: [AppController],
   providers: [AppService],

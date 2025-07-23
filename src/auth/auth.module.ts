@@ -10,21 +10,19 @@ import { App } from '../entities/app.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { NotificationModule } from '../notification/notification.module';
 import { NotificationService } from '../notification/notification.service';
-// @ts-ignore
-const env = require('../../env.js');
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: env.JWT_SECRET,
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },
     }),
     TypeOrmModule.forFeature([User, Client, App]),
     NotificationModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, NotificationService],
+  providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

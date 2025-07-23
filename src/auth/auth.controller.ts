@@ -11,6 +11,7 @@ import {
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Request as ExpressRequest } from 'express';
+import { ApiProperty } from '@nestjs/swagger';
 
 interface UserRequest extends ExpressRequest {
   user: {
@@ -20,70 +21,70 @@ interface UserRequest extends ExpressRequest {
 }
 
 class RegisterDto {
-  username: string;
-  email: string;
-  password: string;
-  firstName: string;
-  lastName?: string;
-  phone?: string;
-  middleName?: string;
-  dateOfBirth?: string;
-  gender?: string;
-  nationality?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  zipCode?: string;
-  facebookProfileUrl?: string;
-  twitterProfileUrl?: string;
-  linkedinProfileUrl?: string;
-  githubProfileUrl?: string;
-  websiteUrl?: string;
+  @ApiProperty() username: string;
+  @ApiProperty() email: string;
+  @ApiProperty() password: string;
+  @ApiProperty() firstName: string;
+  @ApiProperty({ required: false }) lastName?: string;
+  @ApiProperty({ required: false }) phone?: string;
+  @ApiProperty({ required: false }) middleName?: string;
+  @ApiProperty({ required: false }) dateOfBirth?: string;
+  @ApiProperty({ required: false }) gender?: string;
+  @ApiProperty({ required: false }) nationality?: string;
+  @ApiProperty({ required: false }) address?: string;
+  @ApiProperty({ required: false }) city?: string;
+  @ApiProperty({ required: false }) state?: string;
+  @ApiProperty({ required: false }) country?: string;
+  @ApiProperty({ required: false }) zipCode?: string;
+  @ApiProperty({ required: false }) facebookProfileUrl?: string;
+  @ApiProperty({ required: false }) twitterProfileUrl?: string;
+  @ApiProperty({ required: false }) linkedinProfileUrl?: string;
+  @ApiProperty({ required: false }) githubProfileUrl?: string;
+  @ApiProperty({ required: false }) websiteUrl?: string;
 }
 
 class LoginDto {
-  username: string;
-  password: string;
+  @ApiProperty() username: string;
+  @ApiProperty() password: string;
 }
 
 class UpdateProfileDto {
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  middleName?: string;
-  dateOfBirth?: string;
-  gender?: string;
-  nationality?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  zipCode?: string;
-  facebookProfileUrl?: string;
-  twitterProfileUrl?: string;
-  linkedinProfileUrl?: string;
-  githubProfileUrl?: string;
-  websiteUrl?: string;
-  email?: string;
+  @ApiProperty({ required: false }) firstName?: string;
+  @ApiProperty({ required: false }) lastName?: string;
+  @ApiProperty({ required: false }) phone?: string;
+  @ApiProperty({ required: false }) middleName?: string;
+  @ApiProperty({ required: false }) dateOfBirth?: string;
+  @ApiProperty({ required: false }) gender?: string;
+  @ApiProperty({ required: false }) nationality?: string;
+  @ApiProperty({ required: false }) address?: string;
+  @ApiProperty({ required: false }) city?: string;
+  @ApiProperty({ required: false }) state?: string;
+  @ApiProperty({ required: false }) country?: string;
+  @ApiProperty({ required: false }) zipCode?: string;
+  @ApiProperty({ required: false }) facebookProfileUrl?: string;
+  @ApiProperty({ required: false }) twitterProfileUrl?: string;
+  @ApiProperty({ required: false }) linkedinProfileUrl?: string;
+  @ApiProperty({ required: false }) githubProfileUrl?: string;
+  @ApiProperty({ required: false }) websiteUrl?: string;
+  @ApiProperty({ required: false }) email?: string;
 }
 
 class ChangePasswordDto {
-  currentPassword: string;
-  newPassword: string;
+  @ApiProperty() currentPassword: string;
+  @ApiProperty() newPassword: string;
 }
 
 class RequestPasswordResetDto {
-  email: string;
+  @ApiProperty() email: string;
 }
 
 class ResetPasswordDto {
-  token: string;
-  newPassword: string;
+  @ApiProperty() token: string;
+  @ApiProperty() newPassword: string;
 }
 
 class RequestEmailVerificationDto {
-  email: string;
+  @ApiProperty() email: string;
 }
 
 @Controller('auth')

@@ -8,17 +8,18 @@ import {
   Param,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
+import { ApiProperty } from '@nestjs/swagger';
 
 class SendEmailDto {
-  to: string;
-  subject: string;
-  text: string;
-  html?: string;
+  @ApiProperty() to: string;
+  @ApiProperty() subject: string;
+  @ApiProperty() text: string;
+  @ApiProperty({ required: false }) html?: string;
 }
 
 class SendInAppDto {
-  userId: string;
-  content: string;
+  @ApiProperty() userId: string;
+  @ApiProperty() content: string;
 }
 
 @Controller('notification')
