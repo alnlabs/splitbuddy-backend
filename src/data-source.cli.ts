@@ -1,5 +1,10 @@
 import { DataSource } from 'typeorm';
 import { join } from 'path';
+import { config } from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables from .env file
+config({ path: path.resolve(process.cwd(), '.env') });
 
 console.log('DB_HOST:', process.env.DB_HOST);
 console.log('DB_PORT:', process.env.DB_PORT);

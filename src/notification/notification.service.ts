@@ -17,6 +17,13 @@ export class NotificationService {
     @InjectQueue('notification-queue')
     private readonly notificationQueue: Queue,
   ) {
+    console.log('Initializing SMTP transporter with config:', {
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_USER,
+      from: process.env.SMTP_FROM,
+    });
+
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
@@ -25,7 +32,19 @@ export class NotificationService {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      tls: {
+        rejectUnauthorized: false,
+      },
     } as any);
+
+    // Verify SMTP connection
+    this.transporter.verify((error, success) => {
+      if (error) {
+        console.error('SMTP connection error:', error);
+      } else {
+        console.log('SMTP server is ready to send emails');
+      }
+    });
   }
 
   // Public methods for other modules: enqueue jobs
@@ -49,6 +68,9 @@ export class NotificationService {
     let status = 'SENT';
     let error = null;
     let result = null;
+
+    console.log(`Attempting to send email to: ${to}, subject: ${subject}`);
+
     try {
       result = await this.transporter.sendMail({
         from: process.env.SMTP_FROM,
@@ -57,10 +79,13 @@ export class NotificationService {
         text,
         html,
       });
+      console.log('Email sent successfully:', result.messageId);
     } catch (err) {
       status = 'FAILED';
       error = err.message || String(err);
+      console.error('Email sending failed:', error);
     }
+
     await this.notificationRepo.save({
       recipient: to,
       type: 'email',
@@ -69,7 +94,12 @@ export class NotificationService {
       status,
       error,
     });
-    if (status === 'FAILED') throw new Error(error);
+
+    if (status === 'FAILED') {
+      console.error('Email processing failed, throwing error:', error);
+      throw new Error(error);
+    }
+
     return result;
   }
 
