@@ -11,6 +11,7 @@ import { UserSettingsModule } from './user-settings/user-settings.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { DefaultDataModule } from './services/default-data.module';
 import { UserModule } from './user/user.module';
+import { PlansModule } from './plans/plans.module';
 // Environment variables are loaded via dotenv in main.ts
 
 @Module({
@@ -37,6 +38,7 @@ import { UserModule } from './user/user.module';
     TransactionModule,
     DefaultDataModule,
     UserModule,
+    PlansModule,
   ],
 })
 export class AppModule {}

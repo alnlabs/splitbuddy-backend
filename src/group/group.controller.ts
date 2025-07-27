@@ -14,11 +14,24 @@ class CreateGroupDto {
   @ApiProperty() groupName: string;
   @ApiProperty() currency: string;
   @ApiProperty() authorId: string;
+  @ApiProperty({
+    required: false,
+    default: true,
+    description:
+      'Whether this group is shared (external people can join) or unshared (private group). Both types can have multiple members.',
+  })
+  isShared?: boolean;
 }
 
 class UpdateGroupDto {
   @ApiProperty({ required: false }) groupName?: string;
   @ApiProperty({ required: false }) currency?: string;
+  @ApiProperty({
+    required: false,
+    description:
+      'Whether this group is shared (external people can join) or unshared (private group). Both types can have multiple members.',
+  })
+  isShared?: boolean;
 }
 
 @Controller('group')

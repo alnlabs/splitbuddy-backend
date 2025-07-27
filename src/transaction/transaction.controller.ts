@@ -63,6 +63,9 @@ class CreateTransactionDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsString()
+  userId: string;
 }
 
 class UpdateTransactionDto {
@@ -101,6 +104,10 @@ class UpdateTransactionDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @IsString()
+  userId?: string;
 }
 
 @Controller('transaction')

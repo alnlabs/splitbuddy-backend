@@ -24,8 +24,8 @@ export class GroupService {
     const group = this.groupRepo.create(dto);
     const savedGroup = await this.groupRepo.save(group);
 
-    // If members are provided, create them
-    if (dto.members && Array.isArray(dto.members)) {
+    // If members are provided and group is shared, create them
+    if (dto.members && Array.isArray(dto.members) && dto.isShared !== false) {
       const memberPromises = dto.members.map((member: any) => {
         const groupMember = this.groupMemberRepo.create({
           groupId: (savedGroup as any).id,
