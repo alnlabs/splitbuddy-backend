@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-// @ts-ignore
-const env = require('../../env.js');
+// Environment variables are loaded via dotenv in main.ts
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -10,7 +9,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: env.JWT_SECRET,
+      secretOrKey: process.env.JWT_SECRET || 'fallback-secret-key',
     });
   }
 

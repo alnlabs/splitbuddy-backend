@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -22,5 +22,11 @@ export class AppController {
     } catch (error) {
       return { status: 'error', message: error.message };
     }
+  }
+
+  @Post('test')
+  testEndpoint(@Body() body: any) {
+    console.log('[AppController] Test endpoint called with body:', body);
+    return { message: 'Test endpoint working', received: body };
   }
 }

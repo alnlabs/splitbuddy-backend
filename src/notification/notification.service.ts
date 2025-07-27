@@ -5,8 +5,7 @@ import { Repository } from 'typeorm';
 import { Notification } from './notification.entity';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-// @ts-ignore
-const env = require('../../env.js');
+// Environment variables are loaded via dotenv in main.ts
 
 @Injectable()
 export class NotificationService {
@@ -19,14 +18,14 @@ export class NotificationService {
     private readonly notificationQueue: Queue,
   ) {
     this.transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false, // true for 465, false for other ports
       auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASS,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
-    });
+    } as any);
   }
 
   // Public methods for other modules: enqueue jobs
@@ -52,7 +51,7 @@ export class NotificationService {
     let result = null;
     try {
       result = await this.transporter.sendMail({
-        from: env.SMTP_FROM,
+        from: process.env.SMTP_FROM,
         to,
         subject,
         text,

@@ -9,10 +9,26 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { NotificationService } from '../notification/notification.service';
+import { DefaultDataService } from '../services/default-data.service';
 import { randomBytes } from 'crypto';
 import { addMinutes, isAfter } from 'date-fns';
-// @ts-ignore
-const env = require('../../env.js');
+// Environment variables are loaded via dotenv in main.ts
+import {
+  GoogleSignupDto,
+  GoogleLoginDto,
+  GoogleVerifyDto,
+} from './google-auth.dto';
+import { OAuth2Client } from 'google-auth-library';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+async function verifyGoogleToken(idToken: string) {
+  const ticket = await googleClient.verifyIdToken({
+    idToken,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+  return ticket.getPayload();
+}
 
 @Injectable()
 export class AuthService {
@@ -21,6 +37,7 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly notificationService: NotificationService,
+    private readonly defaultDataService: DefaultDataService,
   ) {}
 
   async register(dto: any): Promise<any> {
@@ -78,6 +95,7 @@ export class AuthService {
       activated: true,
     });
     await this.userRepository.save(user);
+    await this.defaultDataService.createDefaultDataForUser(user.id);
     const { password: pw, ...profile } = user;
     // Send welcome email and in-app notification
     const welcomeSubject = 'Welcome to SplitBuddy!';
@@ -103,14 +121,15 @@ export class AuthService {
   async login(
     username: string,
     password: string,
-  ): Promise<{ access_token: string }> {
+  ): Promise<{ token: string; userProfile: any }> {
     const user = await this.userRepository.findOne({ where: { username } });
     if (!user) throw new UnauthorizedException('Invalid credentials');
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
-    const payload = { sub: user.id, username: user.username };
+    const { password: pw, ...profile } = user;
     return {
-      access_token: this.jwtService.sign(payload),
+      token: this.jwtService.sign({ sub: user.id, username: user.username }),
+      userProfile: profile,
     };
   }
 
@@ -165,7 +184,7 @@ export class AuthService {
     user.resetPasswordToken = token;
     user.resetPasswordExpires = addMinutes(new Date(), 30); // 30 min expiry
     await this.userRepository.save(user);
-    const resetLink = `${env.APP_URL || 'http://localhost:5900'}/api/v1/auth/reset-password?token=${token}`;
+    const resetLink = `${process.env.APP_URL || 'http://localhost:5900'}/api/v1/auth/reset-password?token=${token}`;
     const subject = 'Password Reset Request';
     const text = `Reset your password: ${resetLink}`;
     const html = `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`;
@@ -200,7 +219,7 @@ export class AuthService {
     const token = randomBytes(32).toString('hex');
     user.activationToken = token;
     await this.userRepository.save(user);
-    const verifyLink = `${env.APP_URL || 'http://localhost:5900'}/api/v1/auth/verify-email?token=${token}`;
+    const verifyLink = `${process.env.APP_URL || 'http://localhost:5900'}/api/v1/auth/verify-email?token=${token}`;
     const subject = 'Verify Your Email';
     const text = `Verify your email: ${verifyLink}`;
     const html = `<p>Click <a href="${verifyLink}">here</a> to verify your email.</p>`;
@@ -219,5 +238,133 @@ export class AuthService {
     user.activationToken = null;
     await this.userRepository.save(user);
     return { message: 'Email verified successfully' };
+  }
+
+  async googleSignup(dto: GoogleSignupDto) {
+    console.log('[AuthService] googleSignup called with dto:', dto);
+
+    const payload = await verifyGoogleToken(dto.idToken);
+    console.log('[AuthService] googleSignup payload:', payload);
+
+    if (!payload?.email)
+      throw new UnauthorizedException('Invalid Google token');
+
+    // Check if user exists
+    let user = await this.userRepository.findOne({
+      where: { email: payload.email },
+    });
+    if (user) throw new BadRequestException('User already exists');
+
+    // Create user
+    user = this.userRepository.create({
+      email: payload.email,
+      firstName: dto.firstName || payload.given_name,
+      lastName: dto.lastName || payload.family_name,
+      username: payload.email,
+      loginType: 'GOOGLE',
+      googleToken: dto.idToken,
+      enabled: true,
+      activated: true,
+    });
+    console.log('[AuthService] googleSignup creating user:', user);
+    await this.userRepository.save(user);
+    await this.defaultDataService.createDefaultDataForUser(user.id);
+    console.log('[AuthService] googleSignup user saved successfully');
+
+    const result = this.loginWithUser(user);
+    console.log('[AuthService] googleSignup returning result:', result);
+    return result;
+  }
+
+  async googleLogin(dto: GoogleLoginDto) {
+    const payload = await verifyGoogleToken(dto.idToken);
+    if (!payload?.email)
+      throw new UnauthorizedException('Invalid Google token');
+
+    // Find user
+    const user = await this.userRepository.findOne({
+      where: { email: payload.email, loginType: 'GOOGLE' },
+    });
+    if (!user)
+      throw new UnauthorizedException('User not found, please sign up first');
+    return this.loginWithUser(user);
+  }
+
+  async googleVerify(idToken: string) {
+    console.log(
+      '[AuthService] googleVerify called with idToken:',
+      idToken ? idToken.substring(0, 12) + '...' : 'undefined',
+    );
+    try {
+      const payload = await verifyGoogleToken(idToken);
+      console.log('[AuthService] googleVerify payload:', payload);
+      if (!payload?.email)
+        throw new UnauthorizedException('Invalid Google token');
+      return { email: payload.email, name: payload.name };
+    } catch (err) {
+      console.error('[AuthService] googleVerify error:', err);
+      throw err;
+    }
+  }
+
+  async logout(userId: string) {
+    console.log('[AuthService] logout called for userId:', userId);
+    // For JWT-based authentication, logout is typically handled client-side
+    // by removing the token. The server doesn't need to do anything special.
+    // However, you could implement token blacklisting here if needed.
+    return { message: 'Logout successful' };
+  }
+
+  private loginWithUser(user: User) {
+    const { password, ...profile } = user;
+    return {
+      token: this.jwtService.sign({ sub: user.id, email: user.email }),
+      userProfile: profile,
+    };
+  }
+
+  async createDefaultData(userId: string) {
+    try {
+      console.log(`[AuthService] Creating default data for user: ${userId}`);
+      const result =
+        await this.defaultDataService.createDefaultDataForUser(userId);
+      console.log(
+        `[AuthService] Default data created successfully for user: ${userId}`,
+      );
+      return {
+        message: 'Default data created successfully',
+        data: result,
+      };
+    } catch (error) {
+      console.error(
+        `[AuthService] Error creating default data for user ${userId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async checkDefaultDataStatus(userId: string) {
+    try {
+      console.log(
+        `[AuthService] Checking default data status for user: ${userId}`,
+      );
+
+      const result =
+        await this.defaultDataService.checkDefaultDataStatus(userId);
+
+      console.log(
+        `[AuthService] Default data status for user ${userId}:`,
+        result,
+      );
+
+      return result;
+    } catch (error) {
+      console.error(
+        `[AuthService] Error checking default data status for user ${userId}:`,
+        error,
+      );
+      throw error;
+    }
   }
 }

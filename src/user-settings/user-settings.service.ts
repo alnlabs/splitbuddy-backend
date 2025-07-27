@@ -11,11 +11,34 @@ export class UserSettingsService {
   ) {}
 
   async getByUserId(userId: string) {
-    return this.settingsRepo.findOne({ where: { userId } });
+    const settings = await this.settingsRepo.findOne({ where: { userId } });
+    if (!settings) {
+      // Return default settings if none exist
+      return {
+        userId,
+        theme: 'light',
+        language: 'en',
+        currency: 'USD',
+        emailNotifications: true,
+        pushNotifications: true,
+        inAppNotifications: true,
+        reminders: true,
+        defaultGroupId: null,
+        defaultCategoryId: null,
+        defaultPaymentMethodId: null,
+        twoFactorAuth: false,
+        loginAlerts: true,
+        biometricLogin: false,
+        offlineMode: false,
+        cloudSync: true,
+        exportData: false,
+      };
+    }
+    return settings;
   }
 
   async createOrUpdate(userId: string, dto: Partial<UserSettings>) {
-    let settings = await this.getByUserId(userId);
+    let settings = await this.settingsRepo.findOne({ where: { userId } });
     if (!settings) {
       settings = this.settingsRepo.create({ ...dto, userId });
     } else {

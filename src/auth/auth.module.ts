@@ -10,6 +10,7 @@ import { App } from '../entities/app.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { NotificationModule } from '../notification/notification.module';
 import { NotificationService } from '../notification/notification.service';
+import { DefaultDataModule } from '../services/default-data.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { NotificationService } from '../notification/notification.service';
     }),
     TypeOrmModule.forFeature([User, Client, App]),
     NotificationModule,
+    DefaultDataModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

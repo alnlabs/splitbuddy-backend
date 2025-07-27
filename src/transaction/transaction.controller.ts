@@ -112,11 +112,6 @@ export class TransactionController {
     return this.transactionService.create(dto);
   }
 
-  @Get(':id')
-  async getById(@Param('id') id: string) {
-    return this.transactionService.getById(id);
-  }
-
   @Get()
   async list(@Query('type') type?: string, @Query('groupId') groupId?: string) {
     return this.transactionService.list(type, groupId);
@@ -145,6 +140,11 @@ export class TransactionController {
   @Get('net-cash-flow')
   async netCashFlow(@Query('start') start: string, @Query('end') end: string) {
     return this.transactionService.netCashFlow(start, end);
+  }
+
+  @Get(':id')
+  async getById(@Param('id') id: string) {
+    return this.transactionService.getById(id);
   }
 
   @Patch(':id')

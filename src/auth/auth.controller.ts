@@ -12,6 +12,11 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Request as ExpressRequest } from 'express';
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  GoogleSignupDto,
+  GoogleLoginDto,
+  GoogleVerifyDto,
+} from './google-auth.dto';
 
 interface UserRequest extends ExpressRequest {
   user: {
@@ -147,5 +152,43 @@ export class AuthController {
   @Get('verify-email')
   async verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
+  }
+
+  @Post('google-signup')
+  async googleSignup(@Body() dto: GoogleSignupDto) {
+    console.log('[AuthController] /auth/google-signup called with dto:', dto);
+    return this.authService.googleSignup(dto);
+  }
+
+  @Post('google-login')
+  async googleLogin(@Body() dto: GoogleLoginDto) {
+    return this.authService.googleLogin(dto);
+  }
+
+  @Post('google-verify')
+  async googleVerify(@Body() dto: GoogleVerifyDto) {
+    console.log(
+      '[AuthController] /auth/google-verify called with idToken:',
+      dto.idToken ? dto.idToken.substring(0, 12) + '...' : 'undefined',
+    );
+    return this.authService.googleVerify(dto.idToken);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('logout')
+  async logout(@Request() req: UserRequest) {
+    return this.authService.logout(req.user.userId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('default-data/create')
+  async createDefaultData(@Request() req: UserRequest) {
+    return this.authService.createDefaultData(req.user.userId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('default-data/status')
+  async checkDefaultDataStatus(@Request() req: UserRequest) {
+    return this.authService.checkDefaultDataStatus(req.user.userId);
   }
 }
