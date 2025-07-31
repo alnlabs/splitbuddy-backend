@@ -13,11 +13,13 @@ export class AppController {
   @Get('db-test')
   async dbTest() {
     try {
-      const AppDataSource = require('./data-source').default;
+      const createDataSource = require('./data-source').default;
+      const AppDataSource = await createDataSource();
       if (!AppDataSource.isInitialized) {
         await AppDataSource.initialize();
       }
       await AppDataSource.query('SELECT 1');
+      await AppDataSource.destroy();
       return { status: 'success', message: 'Database connection is working!' };
     } catch (error) {
       return { status: 'error', message: error.message };
