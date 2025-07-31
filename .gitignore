@@ -35,3 +35,10 @@ coverage/
 
 # Docker
 *.local.yml
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+.terraform.tfstate.lock.info
