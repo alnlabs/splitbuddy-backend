@@ -88,6 +88,49 @@ create_secrets_from_env() {
     print_success "All secrets created successfully!"
 }
 
+# Create all required secrets with default values
+create_default_secrets() {
+    print_status "Creating default GitHub secrets..."
+
+    # Database Configuration
+    echo "postgres" | gh secret set DB_HOST --repo "$GITHUB_REPO"
+    echo "5432" | gh secret set DB_PORT --repo "$GITHUB_REPO"
+    echo "splitbuddy_user_prod" | gh secret set DB_USERNAME --repo "$GITHUB_REPO"
+    echo "your-secure-password" | gh secret set DB_PASSWORD --repo "$GITHUB_REPO"
+    echo "splitbuddy_prod" | gh secret set DB_DATABASE --repo "$GITHUB_REPO"
+
+    # Redis Configuration
+    echo "redis" | gh secret set REDIS_HOST --repo "$GITHUB_REPO"
+    echo "6379" | gh secret set REDIS_PORT --repo "$GITHUB_REPO"
+
+    # JWT Configuration
+    echo "your-jwt-secret" | gh secret set JWT_SECRET --repo "$GITHUB_REPO"
+
+    # SMTP Configuration
+    echo "smtp.gmail.com" | gh secret set SMTP_HOST --repo "$GITHUB_REPO"
+    echo "587" | gh secret set SMTP_PORT --repo "$GITHUB_REPO"
+    echo "your-email@gmail.com" | gh secret set SMTP_USER --repo "$GITHUB_REPO"
+    echo "your-app-password" | gh secret set SMTP_PASS --repo "$GITHUB_REPO"
+    echo "your-email@gmail.com" | gh secret set SMTP_FROM --repo "$GITHUB_REPO"
+
+    # Google OAuth Configuration
+    echo "your-google-client-id" | gh secret set GOOGLE_CLIENT_ID --repo "$GITHUB_REPO"
+    echo "your-google-client-secret" | gh secret set GOOGLE_CLIENT_SECRET --repo "$GITHUB_REPO"
+    echo "http://localhost:5900/api/v1/auth/google/callback" | gh secret set GOOGLE_CALLBACK_URL --repo "$GITHUB_REPO"
+
+    # App Configuration
+    echo "5900" | gh secret set APP_PORT --repo "$GITHUB_REPO"
+    echo "5900" | gh secret set PORT --repo "$GITHUB_REPO"
+    echo "production" | gh secret set NODE_ENV --repo "$GITHUB_REPO"
+    echo "http://localhost:3000" | gh secret set CORS_ORIGIN --repo "$GITHUB_REPO"
+
+    # Queue Configuration
+    echo "email-queue" | gh secret set EMAIL_QUEUE_NAME --repo "$GITHUB_REPO"
+    echo "notification-queue" | gh secret set NOTIFICATION_QUEUE_NAME --repo "$GITHUB_REPO"
+
+    print_success "All default secrets created successfully!"
+}
+
 # List existing secrets
 list_secrets() {
     print_status "Listing existing secrets for $GITHUB_REPO..."
@@ -107,11 +150,12 @@ main() {
     echo "Choose an option:"
     echo "1. Create secrets from .env.production"
     echo "2. Create secrets from .env"
-    echo "3. List existing secrets"
-    echo "4. Exit"
+    echo "3. Create default secrets with placeholder values"
+    echo "4. List existing secrets"
+    echo "5. Exit"
     echo ""
 
-    read -p "Enter your choice (1-4): " choice
+    read -p "Enter your choice (1-5): " choice
 
     case $choice in
         1)
@@ -121,9 +165,12 @@ main() {
             create_secrets_from_env ".env"
             ;;
         3)
-            list_secrets
+            create_default_secrets
             ;;
         4)
+            list_secrets
+            ;;
+        5)
             print_status "Exiting..."
             exit 0
             ;;

@@ -2,19 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { globalResponseMiddleware } from './global-response.middleware';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { config } from 'dotenv';
-import * as path from 'path';
-
-// Load environment variables from .env file
-config({ path: path.resolve(process.cwd(), '.env') });
+import { env, logEnvironment } from './config/env.config';
 
 // Debug: Log environment variables
-console.log('Environment variables loaded:');
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('DB_PORT:', process.env.DB_PORT);
-console.log('DB_USERNAME:', process.env.DB_USERNAME);
-console.log('DB_NAME:', process.env.DB_NAME);
-console.log('DB_PASSWORD:', process.env.DB_PASSWORD ? '***' : 'undefined');
+logEnvironment();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -22,7 +13,7 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: true, // Allow all origins for development
+    origin: env.app.corsOrigin || true, // Use CORS_ORIGIN from env or allow all for development
     credentials: true,
   });
 
@@ -101,6 +92,7 @@ async function bootstrap() {
     .addTag('User Settings', 'User preferences and settings')
     .addTag('Transactions', 'Financial transaction management')
     .build();
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
@@ -117,6 +109,6 @@ async function bootstrap() {
     `,
   });
 
-  await app.listen(process.env.APP_PORT || 5900, '0.0.0.0');
+  await app.listen(env.app.port, '0.0.0.0');
 }
 bootstrap();

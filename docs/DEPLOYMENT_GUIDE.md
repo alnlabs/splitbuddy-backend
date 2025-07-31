@@ -227,23 +227,30 @@ Create your own environment file for production.
 
 The following environment variables are stored as GitHub secrets:
 
-| Variable      | Description        | Example                |
-| ------------- | ------------------ | ---------------------- |
-| `DB_HOST`     | Database host      | `postgres`             |
-| `DB_PORT`     | Database port      | `5432`                 |
-| `DB_USERNAME` | Database username  | `splitbuddy_user_prod` |
-| `DB_PASSWORD` | Database password  | `your-secure-password` |
-| `DB_DATABASE` | Database name      | `splitbuddy_prod`      |
-| `JWT_SECRET`  | JWT signing secret | `your-jwt-secret`      |
-| `SMTP_HOST`   | SMTP server        | `smtp.gmail.com`       |
-| `SMTP_PORT`   | SMTP port          | `587`                  |
-| `SMTP_USER`   | SMTP username      | `your-email@gmail.com` |
-| `SMTP_PASS`   | SMTP password      | `your-app-password`    |
-| `SMTP_FROM`   | From email address | `your-email@gmail.com` |
-| `REDIS_HOST`  | Redis host         | `redis`                |
-| `REDIS_PORT`  | Redis port         | `6379`                 |
-| `APP_PORT`    | Application port   | `5900`                 |
-| `NODE_ENV`    | Environment        | `production`           |
+| Variable                  | Description                | Example                                             |
+| ------------------------- | -------------------------- | --------------------------------------------------- |
+| `DB_HOST`                 | Database host              | `postgres`                                          |
+| `DB_PORT`                 | Database port              | `5432`                                              |
+| `DB_USERNAME`             | Database username          | `splitbuddy_user_prod`                              |
+| `DB_PASSWORD`             | Database password          | `your-secure-password`                              |
+| `DB_DATABASE`             | Database name              | `splitbuddy_prod`                                   |
+| `JWT_SECRET`              | JWT signing secret         | `your-jwt-secret`                                   |
+| `SMTP_HOST`               | SMTP server                | `smtp.gmail.com`                                    |
+| `SMTP_PORT`               | SMTP port                  | `587`                                               |
+| `SMTP_USER`               | SMTP username              | `your-email@gmail.com`                              |
+| `SMTP_PASS`               | SMTP password              | `your-app-password`                                 |
+| `SMTP_FROM`               | From email address         | `your-email@gmail.com`                              |
+| `REDIS_HOST`              | Redis host                 | `redis`                                             |
+| `REDIS_PORT`              | Redis port                 | `6379`                                              |
+| `GOOGLE_CLIENT_ID`        | Google OAuth client ID     | `your-google-client-id`                             |
+| `GOOGLE_CLIENT_SECRET`    | Google OAuth client secret | `your-google-client-secret`                         |
+| `GOOGLE_CALLBACK_URL`     | Google OAuth callback URL  | `http://localhost:5900/api/v1/auth/google/callback` |
+| `APP_PORT`                | Application port           | `5900`                                              |
+| `PORT`                    | Alternative port variable  | `5900`                                              |
+| `NODE_ENV`                | Environment                | `production`                                        |
+| `CORS_ORIGIN`             | CORS allowed origins       | `http://localhost:3000`                             |
+| `EMAIL_QUEUE_NAME`        | Email queue name           | `email-queue`                                       |
+| `NOTIFICATION_QUEUE_NAME` | Notification queue name    | `notification-queue`                                |
 
 ### Managing Secrets
 

@@ -15,25 +15,25 @@ import { UserModule } from './user/user.module';
 import { PlansModule } from './plans/plans.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-// Environment variables are loaded via dotenv in main.ts
+import { env } from './config/env.config';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
-      database: process.env.DB_NAME || 'splitbuddy_db_local',
+      host: env.database.host,
+      port: env.database.port,
+      username: env.database.username,
+      password: env.database.password,
+      database: env.database.database,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: process.env.NODE_ENV !== 'production',
-      logging: process.env.NODE_ENV === 'development',
+      synchronize: env.app.nodeEnv !== 'production',
+      logging: env.app.nodeEnv === 'development',
     }),
     BullModule.forRoot({
       redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
+        host: env.redis.host,
+        port: env.redis.port,
       },
     }),
     AuthModule,

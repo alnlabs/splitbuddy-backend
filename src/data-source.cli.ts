@@ -1,24 +1,20 @@
 import { DataSource } from 'typeorm';
 import { join } from 'path';
-import { config } from 'dotenv';
-import * as path from 'path';
+import { env } from './config/env.config';
 
-// Load environment variables from .env file
-config({ path: path.resolve(process.cwd(), '.env') });
-
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('DB_PORT:', process.env.DB_PORT);
-console.log('DB_USERNAME:', process.env.DB_USERNAME);
-console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
-console.log('DB_DATABASE:', process.env.DB_DATABASE);
+console.log('DB_HOST:', env.database.host);
+console.log('DB_PORT:', env.database.port);
+console.log('DB_USERNAME:', env.database.username);
+console.log('DB_PASSWORD:', env.database.password ? '***' : 'undefined');
+console.log('DB_DATABASE:', env.database.database);
 
 const AppDataSource = new DataSource({
   type: 'postgres',
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
+  host: env.database.host,
+  port: env.database.port,
+  username: env.database.username,
+  password: env.database.password,
+  database: env.database.database,
   entities: [join(__dirname, 'entities', '*.ts')],
   migrations: [join(__dirname, 'migrations', '*.ts')],
   synchronize: false,

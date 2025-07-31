@@ -244,10 +244,25 @@ SMTP_PASS=mszo jwpz srgu uhwh
 SMTP_FROM=alnlabs1@gmail.com
 
 # ========================================
+# GOOGLE OAUTH CONFIGURATION
+# ========================================
+GOOGLE_CLIENT_ID=1039447696099-ftbfa65lep53cm928a862bl6m2e9gaq9.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:5900/api/v1/auth/google/callback
+
+# ========================================
 # APP CONFIGURATION
 # ========================================
 APP_PORT=5900
+PORT=5900
 NODE_ENV=production
+CORS_ORIGIN=http://localhost:3000
+
+# ========================================
+# QUEUE CONFIGURATION
+# ========================================
+EMAIL_QUEUE_NAME=email-queue
+NOTIFICATION_QUEUE_NAME=notification-queue
 EOF
         print_success "Local environment file created"
     fi

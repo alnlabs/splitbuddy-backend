@@ -205,49 +205,139 @@ The following environment variables are stored as GitHub secrets:
 
 ## Environment Configuration
 
-### Local Development
+SplitBuddy uses a **centralized environment configuration** system for easy management of all environment variables.
 
-The local environment uses Docker Compose with predefined settings:
+### 📁 Centralized Configuration
 
-```yaml
-# docker-compose.local.yml
-services:
-  postgres:
-    environment:
-      POSTGRES_USER: splitbuddy_user_local
-      POSTGRES_PASSWORD: ngSystems@2019
-      POSTGRES_DB: splitbuddy_db_local
+All environment variables are managed in `src/config/env.config.ts`:
+
+```typescript
+export const env: EnvironmentConfig = {
+  // Database Configuration
+  database: {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    username: process.env.DB_USERNAME || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+    database: process.env.DB_DATABASE || 'splitbuddy_db_local',
+  },
+
+  // Redis Configuration
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+  },
+
+  // JWT Configuration
+  jwt: {
+    secret: process.env.JWT_SECRET || 'fallback-secret-key',
+  },
+
+  // SMTP Configuration
+  smtp: {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || '',
+  },
+
+  // Google OAuth Configuration
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    callbackUrl:
+      process.env.GOOGLE_CALLBACK_URL ||
+      'http://localhost:5900/api/v1/auth/google/callback',
+  },
+
+  // App Configuration
+  app: {
+    port: parseInt(process.env.PORT || process.env.APP_PORT || '5900'),
+    nodeEnv: process.env.NODE_ENV || 'development',
+    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  },
+
+  // Queue Configuration
+  queues: {
+    email: process.env.EMAIL_QUEUE_NAME || 'email-queue',
+    notification: process.env.NOTIFICATION_QUEUE_NAME || 'notification-queue',
+  },
+};
 ```
 
-### Production Environment
+### 🔧 Easy Environment Management
 
-Production uses secure environment variables:
+Use the provided script to easily manage environment variables:
 
 ```bash
-# Database
-DB_HOST=postgres
-DB_PORT=5432
-DB_USERNAME=splitbuddy_user_prod
-DB_PASSWORD=your-secure-password
-DB_DATABASE=splitbuddy_prod
+# Show current environment variables
+./scripts/update-env.sh show
 
-# Redis
-REDIS_HOST=redis
-REDIS_PORT=6379
+# Create new .env file from template
+./scripts/update-env.sh create
 
-# JWT
-JWT_SECRET=your-jwt-secret
+# Update a variable in .env
+./scripts/update-env.sh update DB_HOST postgres
 
-# SMTP
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SMTP_FROM=your-email@gmail.com
+# Update a variable in .env.production
+./scripts/update-env.sh update-prod JWT_SECRET my-secret-key
+```
 
-# App
-APP_PORT=5900
-NODE_ENV=production
+### 📋 Complete Environment Variables List
+
+| Variable                  | Description                | Default Value                                       |
+| ------------------------- | -------------------------- | --------------------------------------------------- |
+| `DB_HOST`                 | Database host              | `localhost`                                         |
+| `DB_PORT`                 | Database port              | `5432`                                              |
+| `DB_USERNAME`             | Database username          | `postgres`                                          |
+| `DB_PASSWORD`             | Database password          | `postgres`                                          |
+| `DB_DATABASE`             | Database name              | `splitbuddy_db_local`                               |
+| `REDIS_HOST`              | Redis host                 | `localhost`                                         |
+| `REDIS_PORT`              | Redis port                 | `6379`                                              |
+| `JWT_SECRET`              | JWT signing secret         | `fallback-secret-key`                               |
+| `SMTP_HOST`               | SMTP server                | `smtp.gmail.com`                                    |
+| `SMTP_PORT`               | SMTP port                  | `587`                                               |
+| `SMTP_USER`               | SMTP username              | ``                                                  |
+| `SMTP_PASS`               | SMTP password              | ``                                                  |
+| `SMTP_FROM`               | From email address         | ``                                                  |
+| `GOOGLE_CLIENT_ID`        | Google OAuth client ID     | ``                                                  |
+| `GOOGLE_CLIENT_SECRET`    | Google OAuth client secret | ``                                                  |
+| `GOOGLE_CALLBACK_URL`     | Google OAuth callback URL  | `http://localhost:5900/api/v1/auth/google/callback` |
+| `APP_PORT`                | Application port           | `5900`                                              |
+| `PORT`                    | Alternative port variable  | `5900`                                              |
+| `NODE_ENV`                | Environment                | `development`                                       |
+| `CORS_ORIGIN`             | CORS allowed origins       | `http://localhost:3000`                             |
+| `EMAIL_QUEUE_NAME`        | Email queue name           | `email-queue`                                       |
+| `NOTIFICATION_QUEUE_NAME` | Notification queue name    | `notification-queue`                                |
+
+### 🚀 Benefits of Centralized Configuration
+
+1. **Single Source of Truth**: All environment variables are defined in one place
+2. **Type Safety**: TypeScript interfaces ensure correct variable types
+3. **Easy Updates**: Use the update script to modify variables
+4. **Default Values**: Sensible defaults for development
+5. **Backward Compatibility**: Individual exports for existing code
+6. **Debug Logging**: Built-in environment logging for troubleshooting
+
+### 🔍 Debug Environment Variables
+
+The application automatically logs environment configuration on startup:
+
+```bash
+npm start:dev
+```
+
+You'll see output like:
+
+```
+Environment Configuration:
+Database: { host: 'localhost', port: 5432, username: 'postgres', database: 'splitbuddy_db_local', password: '***' }
+Redis: { host: 'localhost', port: 6379 }
+App: { port: 5900, nodeEnv: 'development', corsOrigin: 'http://localhost:3000' }
+SMTP Host: smtp.gmail.com
+Google Client ID: ***
+Queues: { email: 'email-queue', notification: 'notification-queue' }
 ```
 
 ---
