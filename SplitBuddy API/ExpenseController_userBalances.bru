@@ -1,0 +1,15 @@
+meta {
+  name: ExpenseController_userBalances
+  type: http
+  seq: 28
+}
+
+get {
+  url: http:/localhost:5900//api/v1/expense/balances/user/:userId
+  body: none
+  auth: none
+}
+
+params:path {
+  userId: 
+}

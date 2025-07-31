@@ -1,0 +1,19 @@
+meta {
+  name: ExpenseController_splitExpense
+  type: http
+  seq: 29
+}
+
+post {
+  url: http:/localhost:5900//api/v1/expense/:expenseId/split
+  body: json
+  auth: none
+}
+
+params:path {
+  expenseId: 
+}
+
+body:json {
+  {}
+}
