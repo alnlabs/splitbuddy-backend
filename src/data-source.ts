@@ -1,16 +1,15 @@
-// @ts-ignore
-const env = require('../env.js');
 import { DataSource } from 'typeorm';
 import { join } from 'path';
+import { env } from './config/env.config';
 
 const createDataSource = async () => {
   return new DataSource({
     type: 'postgres',
-    host: env.DB_HOST,
-    port: Number(env.DB_PORT),
-    username: env.DB_USERNAME,
-    password: env.DB_PASSWORD,
-    database: env.DB_DATABASE,
+    host: env.database.host,
+    port: env.database.port,
+    username: env.database.username,
+    password: env.database.password,
+    database: env.database.database,
     entities: [join(__dirname, 'entities', '*.ts')],
     migrations: [join(__dirname, 'migrations', '*.ts')],
     synchronize: false,
