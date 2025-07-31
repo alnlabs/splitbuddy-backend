@@ -55,16 +55,18 @@ print_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
+# Check if Docker is running
 check_docker() {
-    if ! command -v docker &> /dev/null; then
-        print_error "Docker is not installed. Please install Docker first."
+    if ! docker info >/dev/null 2>&1; then
+        print_error "Docker is not running or you don't have permission to access Docker."
+        print_status "Try these solutions:"
+        print_status "1. Start Docker: sudo systemctl start docker"
+        print_status "2. Add user to docker group: sudo usermod -aG docker \$USER"
+        print_status "3. Logout and login again, or run: newgrp docker"
+        print_status "4. Or run with sudo: sudo ./deploy.sh production -s"
         exit 1
     fi
-
-    if ! docker info &> /dev/null; then
-        print_error "Docker is not running. Please start Docker first."
-        exit 1
-    fi
+    print_success "Docker is running"
 }
 
 check_node() {
