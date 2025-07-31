@@ -16,7 +16,7 @@ export class NotificationService {
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
   ) {
-    this.hasRedis = env.redis.host && env.redis.port;
+    this.hasRedis = !!(env.redis.host && env.redis.port);
   }
 
   async sendEmail(
