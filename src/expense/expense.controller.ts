@@ -113,7 +113,7 @@ export class ExpenseController {
   @ApiResponse({ status: 404, description: 'Expense not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getById(@Param('id') id: string) {
-    return this.expenseService.findById(id);
+    return this.expenseService.getById(id);
   }
 
   @ApiBearerAuth()
@@ -128,7 +128,7 @@ export class ExpenseController {
     @Query('groupId') groupId?: string,
     @Query('userId') userId?: string,
   ) {
-    return this.expenseService.findAll({ groupId, userId });
+    return this.expenseService.list(groupId, userId);
   }
 
   @ApiBearerAuth()
@@ -139,7 +139,7 @@ export class ExpenseController {
   @ApiResponse({ status: 200, description: 'Expenses retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async listByCategory(@Param('categoryId') categoryId: string) {
-    return this.expenseService.findByCategory(categoryId);
+    return this.expenseService.listByCategory(categoryId);
   }
 
   @ApiBearerAuth()
@@ -155,7 +155,7 @@ export class ExpenseController {
     @Query('start') start: string,
     @Query('end') end: string,
   ) {
-    return this.expenseService.findByDateRange(start, end);
+    return this.expenseService.listByDateRange(start, end);
   }
 
   @ApiBearerAuth()
@@ -170,7 +170,7 @@ export class ExpenseController {
     @Query('groupId') groupId?: string,
     @Query('userId') userId?: string,
   ) {
-    return this.expenseService.findUnsettled({ groupId, userId });
+    return this.expenseService.listUnsettled(groupId, userId);
   }
 
   @ApiBearerAuth()
@@ -181,7 +181,7 @@ export class ExpenseController {
   @ApiResponse({ status: 200, description: 'Group balances retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async groupBalances(@Param('groupId') groupId: string) {
-    return this.expenseService.getGroupBalances(groupId);
+    return this.expenseService.groupBalances(groupId);
   }
 
   @ApiBearerAuth()
@@ -192,7 +192,7 @@ export class ExpenseController {
   @ApiResponse({ status: 200, description: 'User balances retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async userBalances(@Param('userId') userId: string) {
-    return this.expenseService.getUserBalances(userId);
+    return this.expenseService.userBalances(userId);
   }
 
   @ApiBearerAuth()
