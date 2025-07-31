@@ -120,7 +120,10 @@ export class AuthController {
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - User already exists' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - User already exists',
+  })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
@@ -128,7 +131,10 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid credentials' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid credentials',
+  })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
@@ -162,7 +168,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Change user password' })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 400, description: 'Bad request - Invalid old password' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid old password',
+  })
   async changePassword(
     @Request() req: UserRequest,
     @Body() dto: ChangePasswordDto,
@@ -208,7 +217,10 @@ export class AuthController {
   @Post('google/login')
   @ApiOperation({ summary: 'Login with Google OAuth' })
   @ApiResponse({ status: 200, description: 'Google login successful' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid Google token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid Google token',
+  })
   async googleLogin(@Body() dto: GoogleAuthDto) {
     return this.authService.googleLogin(dto);
   }
