@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateExpensesAndSplitsTable1700000000003 implements MigrationInterface {
+export class CreateExpensesAndSplitsTable1700000000003
+  implements MigrationInterface
+{
   name = 'CreateExpensesAndSplitsTable1700000000003';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -96,12 +98,8 @@ export class CreateExpensesAndSplitsTable1700000000003 implements MigrationInter
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop indexes
-    await queryRunner.query(
-      `DROP INDEX "IDX_expense_splits_user_id"`,
-    );
-    await queryRunner.query(
-      `DROP INDEX "IDX_expense_splits_expense_id"`,
-    );
+    await queryRunner.query(`DROP INDEX "IDX_expense_splits_user_id"`);
+    await queryRunner.query(`DROP INDEX "IDX_expense_splits_expense_id"`);
     await queryRunner.query(`DROP INDEX "IDX_expenses_date"`);
     await queryRunner.query(`DROP INDEX "IDX_expenses_category_id"`);
     await queryRunner.query(`DROP INDEX "IDX_expenses_group_id"`);
@@ -133,4 +131,4 @@ export class CreateExpensesAndSplitsTable1700000000003 implements MigrationInter
     await queryRunner.query(`DROP TABLE "expense_splits"`);
     await queryRunner.query(`DROP TABLE "expenses"`);
   }
-} 
+}

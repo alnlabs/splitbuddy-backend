@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreatePaymentsAndSettingsTable1700000000006 implements MigrationInterface {
+export class CreatePaymentsAndSettingsTable1700000000006
+  implements MigrationInterface
+{
   name = 'CreatePaymentsAndSettingsTable1700000000006';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -97,4 +99,4 @@ export class CreatePaymentsAndSettingsTable1700000000006 implements MigrationInt
     await queryRunner.query(`DROP TABLE "settings"`);
     await queryRunner.query(`DROP TABLE "payments"`);
   }
-} 
+}

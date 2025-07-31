@@ -62,12 +62,8 @@ export class CreateUserGroupsTable1700000000001 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Drop indexes
-    await queryRunner.query(
-      `DROP INDEX "IDX_user_group_members_group_id"`,
-    );
-    await queryRunner.query(
-      `DROP INDEX "IDX_user_group_members_user_id"`,
-    );
+    await queryRunner.query(`DROP INDEX "IDX_user_group_members_group_id"`);
+    await queryRunner.query(`DROP INDEX "IDX_user_group_members_user_id"`);
     await queryRunner.query(`DROP INDEX "IDX_user_groups_author_id"`);
 
     // Drop foreign key constraints
@@ -85,4 +81,4 @@ export class CreateUserGroupsTable1700000000001 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE "user_group_members"`);
     await queryRunner.query(`DROP TABLE "user_groups"`);
   }
-} 
+}

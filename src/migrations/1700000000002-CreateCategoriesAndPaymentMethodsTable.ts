@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateCategoriesAndPaymentMethodsTable1700000000002 implements MigrationInterface {
+export class CreateCategoriesAndPaymentMethodsTable1700000000002
+  implements MigrationInterface
+{
   name = 'CreateCategoriesAndPaymentMethodsTable1700000000002';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -72,4 +74,4 @@ export class CreateCategoriesAndPaymentMethodsTable1700000000002 implements Migr
     await queryRunner.query(`DROP TABLE "payment_methods"`);
     await queryRunner.query(`DROP TABLE "categories"`);
   }
-} 
+}

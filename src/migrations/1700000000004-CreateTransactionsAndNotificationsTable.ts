@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateTransactionsAndNotificationsTable1700000000004 implements MigrationInterface {
+export class CreateTransactionsAndNotificationsTable1700000000004
+  implements MigrationInterface
+{
   name = 'CreateTransactionsAndNotificationsTable1700000000004';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -108,4 +110,4 @@ export class CreateTransactionsAndNotificationsTable1700000000004 implements Mig
     await queryRunner.query(`DROP TABLE "notifications"`);
     await queryRunner.query(`DROP TABLE "transactions"`);
   }
-} 
+}
