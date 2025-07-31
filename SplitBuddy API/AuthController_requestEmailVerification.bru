@@ -1,0 +1,15 @@
+meta {
+  name: AuthController_requestEmailVerification
+  type: http
+  seq: 10
+}
+
+post {
+  url: http:/localhost:5900//api/v1/auth/request-email-verification
+  body: json
+  auth: none
+}
+
+body:json {
+  {}
+}

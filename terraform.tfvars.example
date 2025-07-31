@@ -1,0 +1,14 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# Project Configuration
+project_name = "splitbuddy"
+environment  = "production"
+
+# Database Configuration
+db_password = "your-secure-database-password-here"
+
+# Optional: Override default values
+# aws_region = "eu-west-1"
+# project_name = "my-splitbuddy"
+# environment = "staging"

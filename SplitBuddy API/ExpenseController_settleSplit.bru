@@ -1,0 +1,15 @@
+meta {
+  name: ExpenseController_settleSplit
+  type: http
+  seq: 31
+}
+
+patch {
+  url: http:/localhost:5900//api/v1/expense/split/:splitId/settle
+  body: none
+  auth: none
+}
+
+params:path {
+  splitId: 
+}

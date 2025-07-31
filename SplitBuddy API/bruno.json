@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "SplitBuddy API",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
