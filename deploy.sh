@@ -5,6 +5,27 @@
 
 set -e
 
+# Parse command line arguments
+SKIP_INSTALL=false
+COMMAND=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --skip-install)
+            SKIP_INSTALL=true
+            shift
+            ;;
+        --help|-h)
+            COMMAND="help"
+            shift
+            ;;
+        *)
+            COMMAND="$1"
+            shift
+            ;;
+    esac
+done
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -71,6 +92,11 @@ check_production_env() {
 }
 
 install_dependencies() {
+    if [ "$SKIP_INSTALL" = true ]; then
+        print_warning "Skipping dependency installation (--skip-install flag used)"
+        return 0
+    fi
+
     print_status "Installing dependencies..."
 
     # Clean install to ensure consistency
@@ -214,7 +240,7 @@ show_status() {
 show_help() {
     echo "SplitBuddy Backend Deployment Script"
     echo ""
-    echo "Usage: $0 [COMMAND]"
+    echo "Usage: $0 [COMMAND] [OPTIONS]"
     echo ""
     echo "Commands:"
     echo "  local-start, local    Start local development environment with Docker"
@@ -225,17 +251,21 @@ show_help() {
     echo "  status                Show application status"
     echo "  help, --help, -h      Show this help message"
     echo ""
+    echo "Options:"
+    echo "  --skip-install        Skip dependency installation (use existing node_modules)"
+    echo ""
     echo "Examples:"
     echo "  $0 local-start        # Start local development"
     echo "  $0 local              # Start local development (alias)"
     echo "  $0 deploy             # Deploy to production"
     echo "  $0 production         # Deploy to production (alias)"
     echo "  $0 prod               # Deploy to production (alias)"
+    echo "  $0 deploy --skip-install  # Deploy without reinstalling dependencies"
     echo "  $0 status             # Check application status"
 }
 
 # Main script logic
-case "${1:-help}" in
+case "${COMMAND:-help}" in
     "local-start"|"local")
         start_local
         ;;
