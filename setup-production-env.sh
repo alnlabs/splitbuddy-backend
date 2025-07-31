@@ -1,9 +1,8 @@
 #!/bin/bash
-
 # SplitBuddy Backend Production Environment Setup Script
 # Interactive setup for production deployment
 
-set -e  # Exit on any error
+set -e
 
 # Colors for output
 RED='\033[0;31m'
@@ -12,325 +11,237 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
+# Variables
+DOMAIN=""
+DB_NAME=""
+DB_USERNAME=""
+DB_PASSWORD=""
+DB_HOST=""
+DB_PORT=""
+REDIS_HOST=""
+REDIS_PORT=""
+JWT_SECRET=""
+APP_PORT=""
+NODE_ENV=""
+
+# Helper functions
 print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    echo -e "${GREEN}✅ $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}❌ $1${NC}"
 }
 
-# Function to read user input with default value
 read_input() {
     local prompt="$1"
     local default="$2"
     local var_name="$3"
-
+    
     if [ -n "$default" ]; then
         echo -n "$prompt [$default]: "
     else
         echo -n "$prompt: "
     fi
-
+    
     read -r input
-    if [ -z "$input" ] && [ -n "$default" ]; then
+    if [ -z "$input" ]; then
         input="$default"
     fi
-
+    
     eval "$var_name=\"$input\""
 }
 
-# Function to generate secure random string
-generate_secret() {
+generate_jwt_secret() {
     openssl rand -base64 32
 }
 
-# Function to check if command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
+check_prerequisites() {
+    print_status "Checking prerequisites..."
+    
+    # Check if running as root
+    if [ "$EUID" -eq 0 ]; then
+        print_error "Please do not run this script as root. Use a regular user with sudo privileges."
+        exit 1
+    fi
+    
+    # Check if Node.js is installed
+    if ! command -v node &> /dev/null; then
+        print_error "Node.js is not installed. Please install Node.js v18 or higher first."
+        exit 1
+    fi
+    
+    # Check Node.js version
+    NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+    if [ "$NODE_VERSION" -lt 18 ]; then
+        print_error "Node.js version 18 or higher is required. Current version: $(node -v)"
+        exit 1
+    fi
+    
+    # Check if npm is installed
+    if ! command -v npm &> /dev/null; then
+        print_error "npm is not installed. Please install npm first."
+        exit 1
+    fi
+    
+    print_success "Prerequisites check passed!"
 }
 
-# Function to check if system is Linux
-is_linux() {
-    [ "$(uname)" = "Linux" ]
-}
-
-# Function to check if system is Ubuntu/Debian
-is_ubuntu() {
-    command_exists apt-get
-}
-
-# Function to check if system is CentOS/RHEL
-is_centos() {
-    command_exists yum
-}
-
-# Function to install system dependencies
-install_system_deps() {
+install_system_dependencies() {
     print_status "Installing system dependencies..."
-
-    if is_linux; then
-        if is_ubuntu; then
-            sudo apt-get update
-            sudo apt-get install -y curl wget git build-essential
-        elif is_centos; then
-            sudo yum update -y
-            sudo yum install -y curl wget git gcc gcc-c++ make
-        else
-            print_warning "Unsupported Linux distribution. Please install manually:"
-            print_warning "  - curl, wget, git, build-essential (Ubuntu/Debian)"
-            print_warning "  - curl, wget, git, gcc, gcc-c++ (CentOS/RHEL)"
-        fi
-    else
-        print_warning "Non-Linux system detected. Please install dependencies manually."
+    
+    # Update package list
+    sudo apt update
+    
+    # Install required packages
+    sudo apt install -y curl wget git unzip software-properties-common apt-transport-https ca-certificates gnupg lsb-release
+    
+    # Install Node.js (if not already installed)
+    if ! command -v node &> /dev/null; then
+        print_status "Installing Node.js..."
+        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+        sudo apt install -y nodejs
     fi
+    
+    # Install PM2 globally
+    if ! command -v pm2 &> /dev/null; then
+        print_status "Installing PM2..."
+        sudo npm install -g pm2
+    fi
+    
+    # Install PostgreSQL
+    if ! command -v psql &> /dev/null; then
+        print_status "Installing PostgreSQL..."
+        sudo apt install -y postgresql postgresql-contrib
+        sudo systemctl enable postgresql
+        sudo systemctl start postgresql
+    fi
+    
+    # Install Redis
+    if ! command -v redis-server &> /dev/null; then
+        print_status "Installing Redis..."
+        sudo apt install -y redis-server
+        sudo systemctl enable redis-server
+        sudo systemctl start redis-server
+    fi
+    
+    # Install Nginx
+    if ! command -v nginx &> /dev/null; then
+        print_status "Installing Nginx..."
+        sudo apt install -y nginx
+        sudo systemctl enable nginx
+        sudo systemctl start nginx
+    fi
+    
+    print_success "System dependencies installed!"
 }
 
-# Function to install Node.js
-install_nodejs() {
-    print_status "Installing Node.js..."
-
-    if command_exists node; then
-        NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-        if [ "$NODE_VERSION" -ge 18 ]; then
-            print_success "Node.js $(node -v) is already installed"
-            return 0
-        else
-            print_warning "Node.js version is too old: $(node -v). Installing v18..."
-        fi
-    fi
-
-    if is_linux; then
-        if is_ubuntu; then
-            # Install Node.js 18.x
-            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-        elif is_centos; then
-            # Install Node.js 18.x
-            curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
-            sudo yum install -y nodejs
-        fi
-    else
-        print_error "Please install Node.js v18 or higher manually"
-        exit 1
-    fi
-
-    print_success "Node.js $(node -v) installed successfully"
-}
-
-# Function to install PostgreSQL
-install_postgresql() {
-    print_status "Installing PostgreSQL..."
-
-    if command_exists psql; then
-        print_success "PostgreSQL is already installed"
-        return 0
-    fi
-
-    if is_linux; then
-        if is_ubuntu; then
-            sudo apt-get install -y postgresql postgresql-contrib
-            sudo systemctl start postgresql
-            sudo systemctl enable postgresql
-        elif is_centos; then
-            sudo yum install -y postgresql postgresql-server postgresql-contrib
-            sudo postgresql-setup initdb
-            sudo systemctl start postgresql
-            sudo systemctl enable postgresql
-        fi
-    else
-        print_error "Please install PostgreSQL manually"
-        exit 1
-    fi
-
-    print_success "PostgreSQL installed successfully"
-}
-
-# Function to install Redis
-install_redis() {
-    print_status "Installing Redis..."
-
-    if command_exists redis-server; then
-        print_success "Redis is already installed"
-        return 0
-    fi
-
-    if is_linux; then
-        if is_ubuntu; then
-            sudo apt-get install -y redis-server
-            sudo systemctl start redis-server
-            sudo systemctl enable redis-server
-        elif is_centos; then
-            sudo yum install -y redis
-            sudo systemctl start redis
-            sudo systemctl enable redis
-        fi
-    else
-        print_error "Please install Redis manually"
-        exit 1
-    fi
-
-    print_success "Redis installed successfully"
-}
-
-# Function to install PM2
-install_pm2() {
-    print_status "Installing PM2..."
-
-    if command_exists pm2; then
-        print_success "PM2 is already installed"
-        return 0
-    fi
-
-    sudo npm install -g pm2
-    print_success "PM2 installed successfully"
-}
-
-# Function to install Nginx
-install_nginx() {
-    print_status "Installing Nginx..."
-
-    if command_exists nginx; then
-        print_success "Nginx is already installed"
-        return 0
-    fi
-
-    if is_linux; then
-        if is_ubuntu; then
-            sudo apt-get install -y nginx
-            sudo systemctl start nginx
-            sudo systemctl enable nginx
-        elif is_centos; then
-            sudo yum install -y nginx
-            sudo systemctl start nginx
-            sudo systemctl enable nginx
-        fi
-    else
-        print_error "Please install Nginx manually"
-        exit 1
-    fi
-
-    print_success "Nginx installed successfully"
-}
-
-# Function to setup firewall
-setup_firewall() {
-    print_status "Setting up firewall..."
-
-    if is_linux; then
-        if is_ubuntu; then
-            sudo ufw allow 22/tcp    # SSH
-            sudo ufw allow 80/tcp    # HTTP
-            sudo ufw allow 443/tcp   # HTTPS
-            sudo ufw allow 3000/tcp  # Application
-            sudo ufw --force enable
-        elif is_centos; then
-            sudo firewall-cmd --permanent --add-service=ssh
-            sudo firewall-cmd --permanent --add-service=http
-            sudo firewall-cmd --permanent --add-service=https
-            sudo firewall-cmd --permanent --add-port=3000/tcp
-            sudo firewall-cmd --reload
-        fi
-    fi
-
-    print_success "Firewall configured successfully"
-}
-
-# Function to create production environment file
 create_env_file() {
-    print_status "Creating production environment file..."
-
+    print_status "Creating environment file..."
+    
     cat > .env.production << EOF
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=$DB_USERNAME
-DB_PASSWORD=$DB_PASSWORD
-DB_NAME=$DB_NAME
-
-# JWT Configuration
-JWT_SECRET=$JWT_SECRET
-
-# Email Configuration
-SMTP_USER=$SMTP_USER
-SMTP_PASS=$SMTP_PASS
-SMTP_FROM=$SMTP_FROM
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-
-# Google OAuth
-GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
-
 # Application Configuration
-APP_PORT=3000
 NODE_ENV=production
+APP_PORT=${APP_PORT}
+DOMAIN=${DOMAIN}
+
+# Database Configuration
+DB_HOST=${DB_HOST}
+DB_PORT=${DB_PORT}
+DB_NAME=${DB_NAME}
+DB_USERNAME=${DB_USERNAME}
+DB_PASSWORD=${DB_PASSWORD}
 
 # Redis Configuration
-REDIS_HOST=localhost
-REDIS_PORT=6379
+REDIS_HOST=${REDIS_HOST}
+REDIS_PORT=${REDIS_PORT}
+
+# JWT Configuration
+JWT_SECRET=${JWT_SECRET}
+
+# Email Configuration (optional)
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# AWS Configuration (optional)
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+AWS_S3_BUCKET=
 EOF
 
-    print_success "Production environment file created: .env.production"
+    print_success "Environment file created: .env.production"
 }
 
-# Function to create systemd service
+setup_database() {
+    print_status "Setting up PostgreSQL database..."
+    
+    # Create database and user
+    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;" 2>/dev/null || true
+    sudo -u postgres psql -c "CREATE USER $DB_USERNAME WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || true
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USERNAME;" 2>/dev/null || true
+    sudo -u postgres psql -c "ALTER USER $DB_USERNAME CREATEDB;" 2>/dev/null || true
+    
+    print_success "Database setup completed!"
+}
+
 create_systemd_service() {
     print_status "Creating systemd service..."
-
-    local app_name="splitbuddy-backend"
-    local app_path="$(pwd)"
-    local user="$(whoami)"
-
-    sudo tee /etc/systemd/system/$app_name.service > /dev/null << EOF
+    
+    sudo tee /etc/systemd/system/splitbuddy-backend.service > /dev/null << EOF
 [Unit]
-Description=SplitBuddy Backend
-After=network.target postgresql.service redis.service
+Description=SplitBuddy Backend API
+After=network.target postgresql.service redis-server.service
 
 [Service]
 Type=simple
-User=$user
-WorkingDirectory=$app_path
+User=$USER
+WorkingDirectory=$(pwd)
 Environment=NODE_ENV=production
+Environment=PORT=${APP_PORT}
 ExecStart=/usr/bin/node dist/main.js
 Restart=always
 RestartSec=10
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=$app_name
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=splitbuddy-backend
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
     sudo systemctl daemon-reload
-    sudo systemctl enable $app_name.service
-
-    print_success "Systemd service created: $app_name.service"
+    sudo systemctl enable splitbuddy-backend
+    
+    print_success "Systemd service created!"
 }
 
-# Function to create Nginx configuration
 create_nginx_config() {
-    print_status "Creating Nginx configuration..."
-
     local domain="$1"
-    local app_name="splitbuddy-backend"
-
-    sudo tee /etc/nginx/sites-available/$app_name > /dev/null << EOF
+    
+    print_status "Creating Nginx configuration..."
+    
+    sudo tee /etc/nginx/sites-available/splitbuddy-backend > /dev/null << EOF
 server {
     listen 80;
-    server_name $domain;
-
+    server_name ${domain};
+    
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:${APP_PORT};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -340,9 +251,10 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
     }
-
+    
     location /api/docs {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:${APP_PORT};
+        proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -351,161 +263,149 @@ server {
 }
 EOF
 
-    sudo ln -sf /etc/nginx/sites-available/$app_name /etc/nginx/sites-enabled/
+    # Enable the site
+    sudo ln -sf /etc/nginx/sites-available/splitbuddy-backend /etc/nginx/sites-enabled/
+    sudo rm -f /etc/nginx/sites-enabled/default
+    
+    # Test Nginx configuration
     sudo nginx -t
+    
+    # Reload Nginx
     sudo systemctl reload nginx
-
-    print_success "Nginx configuration created for domain: $domain"
+    
+    print_success "Nginx configuration created!"
 }
 
-# Function to setup SSL with Let's Encrypt
 setup_ssl() {
     local domain="$1"
-
+    
     print_status "Setting up SSL certificate with Let's Encrypt..."
-
-    if command_exists certbot; then
-        sudo certbot --nginx -d $domain
-        print_success "SSL certificate installed for $domain"
-    else
-        print_warning "Certbot not found. Please install Let's Encrypt manually:"
-        print_warning "  sudo apt-get install certbot python3-certbot-nginx"
+    
+    # Install Certbot
+    if ! command -v certbot &> /dev/null; then
+        sudo apt install -y certbot python3-certbot-nginx
     fi
+    
+    # Get SSL certificate
+    sudo certbot --nginx -d "$domain" --non-interactive --agree-tos --email admin@"$domain"
+    
+    # Set up auto-renewal
+    sudo crontab -l 2>/dev/null | { cat; echo "0 12 * * * /usr/bin/certbot renew --quiet"; } | sudo crontab -
+    
+    print_success "SSL certificate installed!"
 }
 
-# Function to create database
-setup_database() {
-    print_status "Setting up database..."
-
-    # Create database and user
-    sudo -u postgres psql << EOF
-CREATE DATABASE $DB_NAME;
-CREATE USER $DB_USERNAME WITH PASSWORD '$DB_PASSWORD';
-GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USERNAME;
-ALTER USER $DB_USERNAME CREATEDB;
-\q
-EOF
-
-    print_success "Database setup completed"
+setup_firewall() {
+    print_status "Setting up firewall..."
+    
+    # Install UFW if not installed
+    if ! command -v ufw &> /dev/null; then
+        sudo apt install -y ufw
+    fi
+    
+    # Configure firewall
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+    sudo ufw allow ssh
+    sudo ufw allow 80/tcp
+    sudo ufw allow 443/tcp
+    sudo ufw allow 22/tcp
+    
+    # Enable firewall
+    echo "y" | sudo ufw enable
+    
+    print_success "Firewall configured!"
 }
 
-# Function to show final instructions
 show_final_instructions() {
     local domain="$1"
-
-    echo ""
-    echo "=========================================="
-    echo "🎉 PRODUCTION SETUP COMPLETED SUCCESSFULLY!"
-    echo "=========================================="
+    
+    print_success "Production environment setup completed!"
     echo ""
     echo "📋 Next Steps:"
-    echo "1. Deploy the application:"
-    echo "   ./deploy.sh production"
+    echo "1. Deploy the application: ./deploy.sh deploy"
+    echo "2. Check application status: ./deploy.sh status"
+    echo "3. View logs: pm2 logs splitbuddy-backend"
+    echo "4. Monitor application: pm2 monit"
     echo ""
-    echo "2. Start the service:"
-    echo "   sudo systemctl start splitbuddy-backend"
+    echo "🌐 Application URLs:"
+    echo "   - API: http://$domain"
+    echo "   - Documentation: http://$domain/api/docs"
+    echo "   - Health Check: http://$domain/api/v1/db-test"
     echo ""
-    echo "3. Check service status:"
-    echo "   sudo systemctl status splitbuddy-backend"
+    echo "🔧 Useful Commands:"
+    echo "   - Restart app: ./deploy.sh restart"
+    echo "   - View logs: pm2 logs splitbuddy-backend"
+    echo "   - Monitor: pm2 monit"
+    echo "   - Stop app: pm2 stop splitbuddy-backend"
+    echo "   - Start app: pm2 start splitbuddy-backend"
     echo ""
-    echo "4. View logs:"
-    echo "   sudo journalctl -u splitbuddy-backend -f"
-    echo ""
-    echo "5. Test the application:"
-    echo "   curl http://$domain/api/v1/"
-    echo ""
-    echo "6. API Documentation:"
-    echo "   http://$domain/api/docs"
-    echo ""
-    echo "🔧 Configuration Files:"
+    echo "📁 Important Files:"
     echo "   - Environment: .env.production"
-    echo "   - Systemd: /etc/systemd/system/splitbuddy-backend.service"
+    echo "   - Service: /etc/systemd/system/splitbuddy-backend.service"
     echo "   - Nginx: /etc/nginx/sites-available/splitbuddy-backend"
-    echo ""
-    echo "🔐 Security Notes:"
-    echo "   - Change default passwords"
-    echo "   - Set up regular backups"
-    echo "   - Monitor logs for security issues"
-    echo "   - Keep system packages updated"
     echo ""
 }
 
-# Main setup function
 main() {
-    echo "=========================================="
-    echo "🚀 SplitBuddy Backend Production Setup"
-    echo "=========================================="
+    echo "🚀 SplitBuddy Backend Production Environment Setup"
+    echo "=================================================="
     echo ""
-
-    # Check if running as root
-    if [ "$EUID" -eq 0 ]; then
-        print_error "Please don't run this script as root"
-        exit 1
-    fi
-
-    # Check if we're in the project directory
-    if [ ! -f "package.json" ]; then
-        print_error "Please run this script from the project root directory"
-        exit 1
-    fi
-
-    # Install system dependencies
-    install_system_deps
-
-    # Install required software
-    install_nodejs
-    install_postgresql
-    install_redis
-    install_pm2
-    install_nginx
-
-    # Setup firewall
-    setup_firewall
-
-    # Get user input for configuration
+    
+    # Check prerequisites
+    check_prerequisites
+    
+    # Get user input
+    echo "📝 Please provide the following information:"
     echo ""
-    echo "📝 Configuration Setup"
-    echo "====================="
-
+    
+    read_input "Enter domain name (e.g., api.splitbuddyapp.com)" "" DOMAIN
     read_input "Enter database name" "splitbuddy_db_prod" DB_NAME
     read_input "Enter database username" "splitbuddy_user_prod" DB_USERNAME
     read_input "Enter database password" "" DB_PASSWORD
-
-    read_input "Enter JWT secret (leave empty to generate)" "" JWT_SECRET_INPUT
-    if [ -z "$JWT_SECRET_INPUT" ]; then
-        JWT_SECRET=$(generate_secret)
-        print_success "Generated JWT secret"
-    else
-        JWT_SECRET="$JWT_SECRET_INPUT"
+    read_input "Enter database host" "localhost" DB_HOST
+    read_input "Enter database port" "5432" DB_PORT
+    read_input "Enter Redis host" "localhost" REDIS_HOST
+    read_input "Enter Redis port" "6379" REDIS_PORT
+    read_input "Enter application port" "5900" APP_PORT
+    read_input "Enter JWT secret (leave empty to generate)" "" JWT_SECRET
+    
+    # Generate JWT secret if not provided
+    if [ -z "$JWT_SECRET" ]; then
+        JWT_SECRET=$(generate_jwt_secret)
+        print_status "Generated JWT secret"
     fi
-
-    read_input "Enter Gmail address" "" SMTP_USER
-    read_input "Enter Gmail app password" "" SMTP_PASS
-    read_input "Enter sender email" "$SMTP_USER" SMTP_FROM
-    read_input "Enter Google OAuth Client ID" "" GOOGLE_CLIENT_ID
-    read_input "Enter domain name (e.g., api.splitbuddyapp.com)" "" DOMAIN
-
-    # Create environment file
+    
+    # Set NODE_ENV
+    NODE_ENV="production"
+    
+    echo ""
+    print_status "Installing system dependencies..."
+    install_system_dependencies
+    
+    print_status "Setting up environment..."
     create_env_file
-
-    # Setup database
+    
+    print_status "Setting up database..."
     setup_database
-
-    # Create systemd service
+    
+    print_status "Creating systemd service..."
     create_systemd_service
-
-    # Create Nginx configuration
-    if [ -n "$DOMAIN" ]; then
-        create_nginx_config "$DOMAIN"
-
-        # Setup SSL if domain is provided
-        read_input "Setup SSL certificate with Let's Encrypt? (y/n)" "y" SETUP_SSL
-        if [ "$SETUP_SSL" = "y" ] || [ "$SETUP_SSL" = "Y" ]; then
-            setup_ssl "$DOMAIN"
-        fi
+    
+    print_status "Creating Nginx configuration..."
+    create_nginx_config "$DOMAIN"
+    
+    print_status "Setting up firewall..."
+    setup_firewall
+    
+    # Ask about SSL
+    echo ""
+    read -p "Do you want to set up SSL certificate with Let's Encrypt? (y/n): " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        setup_ssl "$DOMAIN"
     fi
-
-    # Show final instructions
+    
     show_final_instructions "$DOMAIN"
 }
 

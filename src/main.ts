@@ -40,13 +40,77 @@ async function bootstrap() {
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('SplitBuddy API')
-    .setDescription('API documentation for SplitBuddy Backend')
+    .setDescription(`
+      # SplitBuddy Backend API Documentation
+      
+      ## Overview
+      SplitBuddy is a comprehensive expense splitting and financial management API that allows users to:
+      - Create and manage expense groups
+      - Track expenses and split them among group members
+      - Manage categories and payment methods
+      - Handle user authentication and profiles
+      - Send notifications and reminders
+      
+      ## Authentication
+      Most endpoints require Bearer token authentication. Include your JWT token in the Authorization header:
+      \`Authorization: Bearer <your-token>\`
+      
+      ## Getting Started
+      1. Register a new user using \`POST /auth/register\`
+      2. Login to get your JWT token using \`POST /auth/login\`
+      3. Use the token to access protected endpoints
+      
+      ## Features
+      - **Authentication**: JWT-based auth with Google OAuth support
+      - **Expense Management**: Create, update, delete, and split expenses
+      - **Group Management**: Create groups and manage members
+      - **Categories & Payment Methods**: Organize expenses by categories and payment methods
+      - **Balance Tracking**: Track who owes what to whom
+      - **Notifications**: Email and in-app notifications
+      - **Bulk Operations**: Create, update, and delete multiple records at once
+      
+      ## Environment
+      - **Development**: http://localhost:5900
+      - **Production**: https://api.splitbuddyapp.com
+    `)
     .setVersion('1.0')
-    .addServer('http://localhost:5900')
-    .addBearerAuth()
+    .addServer('http://localhost:5900', 'Local Development')
+    .addServer('https://api.splitbuddyapp.com', 'Production')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .addTag('Authentication', 'User registration, login, and profile management')
+    .addTag('Expenses', 'Expense creation, management, and splitting')
+    .addTag('Groups', 'Group creation and management')
+    .addTag('Categories', 'Expense category management')
+    .addTag('Payment Methods', 'Payment method management')
+    .addTag('Notifications', 'Email and in-app notifications')
+    .addTag('User Settings', 'User preferences and settings')
+    .addTag('Transactions', 'Financial transaction management')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      docExpansion: 'none',
+      filter: true,
+      showRequestDuration: true,
+    },
+    customSiteTitle: 'SplitBuddy API Documentation',
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info .title { color: #2c3e50; font-size: 36px; }
+      .swagger-ui .info .description { font-size: 16px; line-height: 1.6; }
+    `,
+  });
 
   await app.listen(process.env.APP_PORT || 5900, '0.0.0.0');
 }
