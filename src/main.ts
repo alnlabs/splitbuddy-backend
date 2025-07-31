@@ -40,9 +40,10 @@ async function bootstrap() {
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('SplitBuddy API')
-    .setDescription(`
+    .setDescription(
+      `
       # SplitBuddy Backend API Documentation
-      
+
       ## Overview
       SplitBuddy is a comprehensive expense splitting and financial management API that allows users to:
       - Create and manage expense groups
@@ -50,16 +51,16 @@ async function bootstrap() {
       - Manage categories and payment methods
       - Handle user authentication and profiles
       - Send notifications and reminders
-      
+
       ## Authentication
       Most endpoints require Bearer token authentication. Include your JWT token in the Authorization header:
       \`Authorization: Bearer <your-token>\`
-      
+
       ## Getting Started
       1. Register a new user using \`POST /auth/register\`
       2. Login to get your JWT token using \`POST /auth/login\`
       3. Use the token to access protected endpoints
-      
+
       ## Features
       - **Authentication**: JWT-based auth with Google OAuth support
       - **Expense Management**: Create, update, delete, and split expenses
@@ -68,11 +69,12 @@ async function bootstrap() {
       - **Balance Tracking**: Track who owes what to whom
       - **Notifications**: Email and in-app notifications
       - **Bulk Operations**: Create, update, and delete multiple records at once
-      
+
       ## Environment
       - **Development**: http://localhost:5900
       - **Production**: https://api.splitbuddyapp.com
-    `)
+    `,
+    )
     .setVersion('1.0')
     .addServer('http://localhost:5900', 'Local Development')
     .addServer('https://api.splitbuddyapp.com', 'Production')
@@ -87,7 +89,10 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    .addTag('Authentication', 'User registration, login, and profile management')
+    .addTag(
+      'Authentication',
+      'User registration, login, and profile management',
+    )
     .addTag('Expenses', 'Expense creation, management, and splitting')
     .addTag('Groups', 'Group creation and management')
     .addTag('Categories', 'Expense category management')

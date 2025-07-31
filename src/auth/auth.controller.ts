@@ -32,26 +32,41 @@ interface UserRequest extends ExpressRequest {
 }
 
 class RegisterDto {
-  @ApiProperty({ description: 'Unique username for the user' }) username: string;
+  @ApiProperty({ description: 'Unique username for the user' })
+  username: string;
   @ApiProperty({ description: 'User email address' }) email: string;
-  @ApiProperty({ description: 'User password (min 6 characters)' }) password: string;
+  @ApiProperty({ description: 'User password (min 6 characters)' })
+  password: string;
   @ApiProperty({ description: 'User first name' }) firstName: string;
-  @ApiProperty({ required: false, description: 'User last name' }) lastName?: string;
-  @ApiProperty({ required: false, description: 'User phone number' }) phone?: string;
-  @ApiProperty({ required: false, description: 'User middle name' }) middleName?: string;
-  @ApiProperty({ required: false, description: 'User date of birth' }) dateOfBirth?: string;
+  @ApiProperty({ required: false, description: 'User last name' })
+  lastName?: string;
+  @ApiProperty({ required: false, description: 'User phone number' })
+  phone?: string;
+  @ApiProperty({ required: false, description: 'User middle name' })
+  middleName?: string;
+  @ApiProperty({ required: false, description: 'User date of birth' })
+  dateOfBirth?: string;
   @ApiProperty({ required: false, description: 'User gender' }) gender?: string;
-  @ApiProperty({ required: false, description: 'User nationality' }) nationality?: string;
-  @ApiProperty({ required: false, description: 'User address' }) address?: string;
+  @ApiProperty({ required: false, description: 'User nationality' })
+  nationality?: string;
+  @ApiProperty({ required: false, description: 'User address' })
+  address?: string;
   @ApiProperty({ required: false, description: 'User city' }) city?: string;
   @ApiProperty({ required: false, description: 'User state' }) state?: string;
-  @ApiProperty({ required: false, description: 'User country' }) country?: string;
-  @ApiProperty({ required: false, description: 'User zip code' }) zipCode?: string;
-  @ApiProperty({ required: false, description: 'Facebook profile URL' }) facebookProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'Twitter profile URL' }) twitterProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'LinkedIn profile URL' }) linkedinProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'GitHub profile URL' }) githubProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'Personal website URL' }) websiteUrl?: string;
+  @ApiProperty({ required: false, description: 'User country' })
+  country?: string;
+  @ApiProperty({ required: false, description: 'User zip code' })
+  zipCode?: string;
+  @ApiProperty({ required: false, description: 'Facebook profile URL' })
+  facebookProfileUrl?: string;
+  @ApiProperty({ required: false, description: 'Twitter profile URL' })
+  twitterProfileUrl?: string;
+  @ApiProperty({ required: false, description: 'LinkedIn profile URL' })
+  linkedinProfileUrl?: string;
+  @ApiProperty({ required: false, description: 'GitHub profile URL' })
+  githubProfileUrl?: string;
+  @ApiProperty({ required: false, description: 'Personal website URL' })
+  websiteUrl?: string;
 }
 
 class LoginDto {
@@ -60,38 +75,56 @@ class LoginDto {
 }
 
 class UpdateProfileDto {
-  @ApiProperty({ required: false, description: 'User first name' }) firstName?: string;
-  @ApiProperty({ required: false, description: 'User last name' }) lastName?: string;
-  @ApiProperty({ required: false, description: 'User phone number' }) phone?: string;
-  @ApiProperty({ required: false, description: 'User middle name' }) middleName?: string;
-  @ApiProperty({ required: false, description: 'User date of birth' }) dateOfBirth?: string;
+  @ApiProperty({ required: false, description: 'User first name' })
+  firstName?: string;
+  @ApiProperty({ required: false, description: 'User last name' })
+  lastName?: string;
+  @ApiProperty({ required: false, description: 'User phone number' })
+  phone?: string;
+  @ApiProperty({ required: false, description: 'User middle name' })
+  middleName?: string;
+  @ApiProperty({ required: false, description: 'User date of birth' })
+  dateOfBirth?: string;
   @ApiProperty({ required: false, description: 'User gender' }) gender?: string;
-  @ApiProperty({ required: false, description: 'User nationality' }) nationality?: string;
-  @ApiProperty({ required: false, description: 'User address' }) address?: string;
+  @ApiProperty({ required: false, description: 'User nationality' })
+  nationality?: string;
+  @ApiProperty({ required: false, description: 'User address' })
+  address?: string;
   @ApiProperty({ required: false, description: 'User city' }) city?: string;
   @ApiProperty({ required: false, description: 'User state' }) state?: string;
-  @ApiProperty({ required: false, description: 'User country' }) country?: string;
-  @ApiProperty({ required: false, description: 'User zip code' }) zipCode?: string;
-  @ApiProperty({ required: false, description: 'Facebook profile URL' }) facebookProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'Twitter profile URL' }) twitterProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'LinkedIn profile URL' }) linkedinProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'GitHub profile URL' }) githubProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'Personal website URL' }) websiteUrl?: string;
-  @ApiProperty({ required: false, description: 'User email address' }) email?: string;
+  @ApiProperty({ required: false, description: 'User country' })
+  country?: string;
+  @ApiProperty({ required: false, description: 'User zip code' })
+  zipCode?: string;
+  @ApiProperty({ required: false, description: 'Facebook profile URL' })
+  facebookProfileUrl?: string;
+  @ApiProperty({ required: false, description: 'Twitter profile URL' })
+  twitterProfileUrl?: string;
+  @ApiProperty({ required: false, description: 'LinkedIn profile URL' })
+  linkedinProfileUrl?: string;
+  @ApiProperty({ required: false, description: 'GitHub profile URL' })
+  githubProfileUrl?: string;
+  @ApiProperty({ required: false, description: 'Personal website URL' })
+  websiteUrl?: string;
+  @ApiProperty({ required: false, description: 'User email address' })
+  email?: string;
 }
 
 class ChangePasswordDto {
   @ApiProperty({ description: 'Current password' }) currentPassword: string;
-  @ApiProperty({ description: 'New password (min 6 characters)' }) newPassword: string;
+  @ApiProperty({ description: 'New password (min 6 characters)' })
+  newPassword: string;
 }
 
 class RequestPasswordResetDto {
-  @ApiProperty({ description: 'Email address for password reset' }) email: string;
+  @ApiProperty({ description: 'Email address for password reset' })
+  email: string;
 }
 
 class ResetPasswordDto {
   @ApiProperty({ description: 'Reset token received via email' }) token: string;
-  @ApiProperty({ description: 'New password (min 6 characters)' }) newPassword: string;
+  @ApiProperty({ description: 'New password (min 6 characters)' })
+  newPassword: string;
 }
 
 class RequestEmailVerificationDto {
@@ -232,7 +265,10 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   @Post('create-default-data')
   @ApiOperation({ summary: 'Create default data for user' })
-  @ApiResponse({ status: 201, description: 'Default data created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Default data created successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async createDefaultData(@Request() req: UserRequest) {
     return this.authService.createDefaultData(req.user.userId);

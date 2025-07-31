@@ -33,7 +33,7 @@ check_docker() {
         print_error "Docker is not installed. Please install Docker first."
         exit 1
     fi
-    
+
     if ! docker info &> /dev/null; then
         print_error "Docker is not running. Please start Docker first."
         exit 1
@@ -45,7 +45,7 @@ check_node() {
         print_error "Node.js is not installed. Please install Node.js first."
         exit 1
     fi
-    
+
     NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
     if [ "$NODE_VERSION" -lt 18 ]; then
         print_error "Node.js version 18 or higher is required. Current version: $(node -v)"
@@ -64,24 +64,24 @@ start_local() {
     print_status "Starting local development environment..."
     check_docker
     check_node
-    
+
     print_status "Stopping existing containers..."
     npm run docker:down 2>/dev/null || true
-    
+
     print_status "Starting services with Docker Compose..."
     npm run docker:dev
-    
+
     print_status "Waiting for services to be ready..."
     sleep 10
-    
+
     # Run migrations inside Docker container
     print_status "Running database migrations..."
     docker exec splitbuddy_backend npm run migration:run
-    
+
     # Create default data inside Docker container
     print_status "Creating default data..."
     docker exec splitbuddy_backend npm run create-default-data
-    
+
     print_success "Local development environment started successfully!"
     print_status "Application is running at: http://localhost:5900"
     print_status "API Documentation: http://localhost:5900/api/docs"
@@ -99,13 +99,13 @@ stop_local() {
 build_production() {
     print_status "Building production application..."
     check_node
-    
+
     print_status "Installing dependencies..."
     npm install
-    
+
     print_status "Building application..."
     npm run build
-    
+
     print_success "Production build completed!"
 }
 
@@ -113,24 +113,24 @@ deploy_production() {
     print_status "Deploying to production..."
     check_node
     check_pm2
-    
+
     # Build the application
     build_production
-    
+
     # Run migrations
     print_status "Running database migrations..."
     npm run migration:run
-    
+
     # Create default data
     print_status "Creating default data..."
     npm run create-default-data
-    
+
     # Start with PM2
     print_status "Starting application with PM2..."
     pm2 delete splitbuddy-backend 2>/dev/null || true
     pm2 start dist/main.js --name splitbuddy-backend --time
     pm2 save
-    
+
     print_success "Production deployment completed!"
     print_status "Application is running with PM2"
     print_status "Check status: pm2 status"
@@ -140,14 +140,14 @@ deploy_production() {
 restart_production() {
     print_status "Restarting production application..."
     check_pm2
-    
+
     pm2 restart splitbuddy-backend
     print_success "Production application restarted!"
 }
 
 show_status() {
     print_status "Checking application status..."
-    
+
     # Check if containers are running (local)
     if docker ps | grep -q splitbuddy_backend; then
         print_success "Local containers are running"
@@ -155,7 +155,7 @@ show_status() {
     else
         print_warning "Local containers are not running"
     fi
-    
+
     # Check if PM2 process is running (production)
     if pm2 list | grep -q splitbuddy-backend; then
         print_success "Production application is running with PM2"

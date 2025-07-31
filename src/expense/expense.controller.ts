@@ -22,40 +22,53 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 
 class CreateExpenseDto {
-  @ApiProperty({ description: 'Group ID where expense belongs' }) groupId: string;
+  @ApiProperty({ description: 'Group ID where expense belongs' })
+  groupId: string;
   @ApiProperty({ description: 'Expense amount' }) amount: number;
-  @ApiProperty({ description: 'Category ID for the expense' }) categoryId: string;
-  @ApiProperty({ description: 'Payment method ID used' }) paymentMethodId: string;
-  @ApiProperty({ required: false, description: 'Expense description' }) description?: string;
+  @ApiProperty({ description: 'Category ID for the expense' })
+  categoryId: string;
+  @ApiProperty({ description: 'Payment method ID used' })
+  paymentMethodId: string;
+  @ApiProperty({ required: false, description: 'Expense description' })
+  description?: string;
   @ApiProperty({ description: 'Date of the expense' }) date: Date;
-  @ApiProperty({ description: 'User ID who added the expense' }) addedBy: string;
+  @ApiProperty({ description: 'User ID who added the expense' })
+  addedBy: string;
   @ApiProperty({ description: 'Author ID of the expense' }) authorId: string;
 }
 
 class UpdateExpenseDto {
-  @ApiProperty({ required: false, description: 'Updated expense amount' }) amount?: number;
-  @ApiProperty({ required: false, description: 'Updated category ID' }) categoryId?: string;
-  @ApiProperty({ required: false, description: 'Updated payment method ID' }) paymentMethodId?: string;
-  @ApiProperty({ required: false, description: 'Updated expense description' }) description?: string;
-  @ApiProperty({ required: false, description: 'Updated expense date' }) date?: Date;
+  @ApiProperty({ required: false, description: 'Updated expense amount' })
+  amount?: number;
+  @ApiProperty({ required: false, description: 'Updated category ID' })
+  categoryId?: string;
+  @ApiProperty({ required: false, description: 'Updated payment method ID' })
+  paymentMethodId?: string;
+  @ApiProperty({ required: false, description: 'Updated expense description' })
+  description?: string;
+  @ApiProperty({ required: false, description: 'Updated expense date' })
+  date?: Date;
 }
 
 class SplitExpenseDto {
-  @ApiProperty({ 
-    type: 'array', 
-    items: { 
+  @ApiProperty({
+    type: 'array',
+    items: {
       type: 'object',
       properties: {
         userId: { type: 'string', description: 'User ID' },
         email: { type: 'string', description: 'User email' },
         fullName: { type: 'string', description: 'User full name' },
         amount: { type: 'number', description: 'Split amount' },
-        shareType: { type: 'string', description: 'Type of share (equal, percentage, fixed)' },
+        shareType: {
+          type: 'string',
+          description: 'Type of share (equal, percentage, fixed)',
+        },
         percentage: { type: 'number', description: 'Percentage share' },
-        notes: { type: 'string', description: 'Additional notes' }
-      }
+        notes: { type: 'string', description: 'Additional notes' },
+      },
     },
-    description: 'Array of expense splits'
+    description: 'Array of expense splits',
   })
   splits: Array<{
     userId?: string;
@@ -111,8 +124,16 @@ export class ExpenseController {
   @UseGuards(AuthGuard('jwt'))
   @Get()
   @ApiOperation({ summary: 'List expenses with optional filters' })
-  @ApiQuery({ name: 'groupId', required: false, description: 'Filter by group ID' })
-  @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
+  @ApiQuery({
+    name: 'groupId',
+    required: false,
+    description: 'Filter by group ID',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'Filter by user ID',
+  })
   @ApiResponse({ status: 200, description: 'Expenses retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async list(
@@ -152,9 +173,20 @@ export class ExpenseController {
   @UseGuards(AuthGuard('jwt'))
   @Get('unsettled')
   @ApiOperation({ summary: 'List unsettled expenses' })
-  @ApiQuery({ name: 'groupId', required: false, description: 'Filter by group ID' })
-  @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
-  @ApiResponse({ status: 200, description: 'Unsettled expenses retrieved successfully' })
+  @ApiQuery({
+    name: 'groupId',
+    required: false,
+    description: 'Filter by group ID',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'Filter by user ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Unsettled expenses retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async listUnsettled(
     @Query('groupId') groupId?: string,
@@ -168,7 +200,10 @@ export class ExpenseController {
   @Get('balances/group/:groupId')
   @ApiOperation({ summary: 'Get group balance summary' })
   @ApiParam({ name: 'groupId', description: 'Group ID' })
-  @ApiResponse({ status: 200, description: 'Group balances retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Group balances retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async groupBalances(@Param('groupId') groupId: string) {
     return this.expenseService.groupBalances(groupId);
@@ -179,7 +214,10 @@ export class ExpenseController {
   @Get('balances/user/:userId')
   @ApiOperation({ summary: 'Get user balance summary' })
   @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'User balances retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User balances retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async userBalances(@Param('userId') userId: string) {
     return this.expenseService.userBalances(userId);
@@ -253,7 +291,10 @@ export class ExpenseController {
   @Get(':expenseId/splits')
   @ApiOperation({ summary: 'Get expense splits' })
   @ApiParam({ name: 'expenseId', description: 'Expense ID' })
-  @ApiResponse({ status: 200, description: 'Expense splits retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Expense splits retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getExpenseSplits(@Param('expenseId') expenseId: string) {
     return this.expenseService.getExpenseSplits(expenseId);
@@ -276,7 +317,10 @@ export class ExpenseController {
   @Get('splits/user/:userId')
   @ApiOperation({ summary: 'Get user expense splits' })
   @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'User splits retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User splits retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getUserSplits(@Query('userId') userId: string) {
     return this.expenseService.getUserSplits(userId);
