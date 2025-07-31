@@ -13,10 +13,12 @@ The application now uses a **single consolidated migration** (`1700000000000-Ini
 - **Better Performance**: Optimized indexes included
 - **Easier Maintenance**: Single source of truth for database schema
 - **Clean History**: No migration conflicts or dependencies
+- **Proper Naming**: Consistent snake_case naming conventions
 
 ## 📁 Migration Structure
 
 ### Current Migration Files
+
 ```
 src/migrations/
 └── 1700000000000-InitialMigration.ts  # Consolidated migration
@@ -25,6 +27,7 @@ src/migrations/
 ### What's Included
 
 #### 🗄️ Database Tables
+
 1. **users** - User accounts and profiles
 2. **user_groups** - Expense sharing groups
 3. **user_group_members** - Group membership
@@ -39,11 +42,14 @@ src/migrations/
 12. **chit_funds** - Chit fund operations
 
 #### 🔗 Foreign Key Relationships
+
 - All proper relationships between tables
 - Cascade delete where appropriate
 - Referential integrity maintained
+- Consistent naming with `_id` suffix
 
 #### 📊 Performance Indexes
+
 - Email and username indexes for users
 - Group and user indexes for expenses
 - Recipient indexes for notifications
@@ -52,12 +58,14 @@ src/migrations/
 ## 🚀 Usage
 
 ### Fresh Installation
+
 ```bash
 # Run the consolidated migration
 npm run migration:run
 ```
 
 ### Development Setup
+
 ```bash
 # Clean install
 npm install
@@ -70,6 +78,7 @@ npm run start:dev
 ```
 
 ### Production Deployment
+
 ```bash
 # Build the application
 npm run build
@@ -84,12 +93,14 @@ npm run start:prod
 ## 🛠️ Migration Scripts
 
 ### Consolidation Script
+
 ```bash
 # Clean up old migrations and keep only consolidated one
 ./scripts/merge-migrations.sh
 ```
 
 ### Manual Cleanup
+
 ```bash
 # Remove old migration files
 rm src/migrations/1753260075994-InitialMigration.ts
@@ -106,50 +117,76 @@ npm run build
 ### Core Tables
 
 #### Users Table
+
 ```sql
 CREATE TABLE "users" (
   "id" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   "username" varchar UNIQUE NOT NULL,
   "email" varchar UNIQUE NOT NULL,
   "password" varchar NOT NULL,
-  "firstName" varchar,
-  "lastName" varchar,
-  -- ... other fields
-  "createdAt" TIMESTAMP DEFAULT now(),
-  "updatedAt" TIMESTAMP DEFAULT now()
+  "first_name" varchar,
+  "last_name" varchar,
+  "phone" varchar,
+  "middle_name" varchar,
+  "date_of_birth" varchar,
+  "gender" varchar,
+  "nationality" varchar,
+  "address" varchar,
+  "city" varchar,
+  "state" varchar,
+  "country" varchar,
+  "zip_code" varchar,
+  "facebook_profile_url" varchar,
+  "twitter_profile_url" varchar,
+  "linkedin_profile_url" varchar,
+  "github_profile_url" varchar,
+  "website_url" varchar,
+  "is_email_verified" boolean DEFAULT false,
+  "is_phone_verified" boolean DEFAULT false,
+  "is_active" boolean DEFAULT true,
+  "last_login_at" TIMESTAMP,
+  "created_at" TIMESTAMP DEFAULT now(),
+  "updated_at" TIMESTAMP DEFAULT now()
 );
 ```
 
 #### User Groups Table
+
 ```sql
 CREATE TABLE "user_groups" (
   "id" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  "groupName" varchar NOT NULL,
+  "group_name" varchar NOT NULL,
   "description" varchar,
   "currency" varchar DEFAULT 'USD',
-  "authorId" uuid NOT NULL,
-  "isShared" boolean DEFAULT true,
-  -- ... other fields
-  FOREIGN KEY ("authorId") REFERENCES "users"("id")
+  "author_id" uuid NOT NULL,
+  "is_shared" boolean DEFAULT true,
+  "created_at" TIMESTAMP DEFAULT now(),
+  "updated_at" TIMESTAMP DEFAULT now(),
+  FOREIGN KEY ("author_id") REFERENCES "users"("id")
 );
 ```
 
 #### Expenses Table
+
 ```sql
 CREATE TABLE "expenses" (
   "id" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  "groupId" uuid NOT NULL,
+  "group_id" uuid NOT NULL,
   "amount" numeric(10,2) NOT NULL,
   "description" varchar,
   "date" TIMESTAMP NOT NULL,
-  "categoryId" uuid NOT NULL,
-  "paymentMethodId" uuid NOT NULL,
-  "addedBy" uuid NOT NULL,
-  -- ... other fields
-  FOREIGN KEY ("groupId") REFERENCES "user_groups"("id"),
-  FOREIGN KEY ("categoryId") REFERENCES "categories"("id"),
-  FOREIGN KEY ("paymentMethodId") REFERENCES "payment_methods"("id"),
-  FOREIGN KEY ("addedBy") REFERENCES "users"("id")
+  "category_id" uuid NOT NULL,
+  "payment_method_id" uuid NOT NULL,
+  "added_by" uuid NOT NULL,
+  "author_id" uuid NOT NULL,
+  "is_settled" boolean DEFAULT false,
+  "created_at" TIMESTAMP DEFAULT now(),
+  "updated_at" TIMESTAMP DEFAULT now(),
+  FOREIGN KEY ("group_id") REFERENCES "user_groups"("id"),
+  FOREIGN KEY ("category_id") REFERENCES "categories"("id"),
+  FOREIGN KEY ("payment_method_id") REFERENCES "payment_methods"("id"),
+  FOREIGN KEY ("added_by") REFERENCES "users"("id"),
+  FOREIGN KEY ("author_id") REFERENCES "users"("id")
 );
 ```
 
@@ -158,18 +195,21 @@ CREATE TABLE "expenses" (
 ### Migration Errors
 
 #### UUID Extension Missing
+
 ```bash
 # Connect to PostgreSQL and run:
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ```
 
 #### Permission Issues
+
 ```bash
 # Ensure database user has proper permissions
 GRANT ALL PRIVILEGES ON DATABASE splitbuddy TO postgres;
 ```
 
 #### Connection Issues
+
 ```bash
 # Check environment variables
 echo $DB_HOST $DB_PORT $DB_USERNAME $DB_PASSWORD $DB_NAME
@@ -181,22 +221,25 @@ psql -h $DB_HOST -p $DB_PORT -U $DB_USERNAME -d $DB_NAME
 ### Common Issues
 
 1. **Database Not Found**
+
    ```bash
    # Create database
    createdb splitbuddy
    ```
 
 2. **User Not Found**
+
    ```bash
    # Create user
    createuser -P postgres
    ```
 
 3. **Port Already in Use**
+
    ```bash
    # Check what's using the port
    lsof -i :5432
-   
+
    # Kill the process
    sudo kill -9 <PID>
    ```
@@ -204,12 +247,14 @@ psql -h $DB_HOST -p $DB_PORT -U $DB_USERNAME -d $DB_NAME
 ## 📈 Performance Considerations
 
 ### Indexes Included
+
 - Email and username indexes for fast user lookups
 - Group and user indexes for expense queries
 - Foreign key indexes for relationship queries
 - Recipient indexes for notification filtering
 
 ### Query Optimization
+
 - Proper foreign key relationships
 - Cascade deletes for data integrity
 - Optimized data types (UUID, numeric, timestamps)
@@ -217,6 +262,7 @@ psql -h $DB_HOST -p $DB_PORT -U $DB_USERNAME -d $DB_NAME
 ## 🔄 Migration Commands
 
 ### TypeORM Commands
+
 ```bash
 # Generate new migration
 npm run migration:generate -- -n MigrationName
@@ -232,6 +278,7 @@ npm run migration:show
 ```
 
 ### Database Commands
+
 ```bash
 # Connect to database
 psql -h localhost -p 5432 -U postgres -d splitbuddy
@@ -249,6 +296,7 @@ psql -h localhost -p 5432 -U postgres -d splitbuddy
 ## 📝 Best Practices
 
 ### For Developers
+
 1. **Always run migrations** before starting development
 2. **Test migrations** in a separate database first
 3. **Backup data** before running migrations in production
@@ -256,6 +304,7 @@ psql -h localhost -p 5432 -U postgres -d splitbuddy
 5. **Document schema changes** in commit messages
 
 ### For Production
+
 1. **Schedule maintenance windows** for migrations
 2. **Test migrations** in staging environment
 3. **Monitor migration logs** for errors
@@ -282,4 +331,4 @@ If you encounter issues with migrations:
 
 ---
 
-**Happy migrating! 🚀** 
+**Happy migrating! 🚀**

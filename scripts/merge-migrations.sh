@@ -36,4 +36,4 @@ npm run build
 echo ""
 echo "✅ Migration consolidation complete!"
 echo "📋 Only 1700000000000-InitialMigration.ts remains"
-echo "🚀 Ready to run: npm run migration:run" 
+echo "🚀 Ready to run: npm run migration:run"
