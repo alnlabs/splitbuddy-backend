@@ -11,7 +11,7 @@ COMMAND=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --skip-install)
+        --skip-install|-s)
             SKIP_INSTALL=true
             shift
             ;;
@@ -252,7 +252,7 @@ show_help() {
     echo "  help, --help, -h      Show this help message"
     echo ""
     echo "Options:"
-    echo "  --skip-install        Skip dependency installation (use existing node_modules)"
+    echo "  --skip-install, -s    Skip dependency installation (use existing node_modules)"
     echo ""
     echo "Examples:"
     echo "  $0 local-start        # Start local development"
@@ -261,6 +261,7 @@ show_help() {
     echo "  $0 production         # Deploy to production (alias)"
     echo "  $0 prod               # Deploy to production (alias)"
     echo "  $0 deploy --skip-install  # Deploy without reinstalling dependencies"
+    echo "  $0 deploy -s          # Deploy without reinstalling dependencies (short)"
     echo "  $0 status             # Check application status"
 }
 
