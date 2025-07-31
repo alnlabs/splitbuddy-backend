@@ -44,9 +44,9 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=${DB_DATABASE:-splitbuddy_prod}
-      - POSTGRES_USER=${DB_USERNAME:-splitbuddy_user_prod}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-SplitBuddy2024!Secure}
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql

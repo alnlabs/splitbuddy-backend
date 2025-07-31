@@ -206,6 +206,35 @@ deploy_production() {
     print_status "Setting up local production environment..."
     if [ "$USE_GITHUB_ENV" = true ]; then
         fetch_env_from_github
+        # Map GitHub secrets for local Docker deployment
+        print_status "Mapping GitHub secrets for local Docker deployment..."
+        
+        # Read current values from .env file
+        if [ -f ".env" ]; then
+            # Extract database credentials from GitHub secrets
+            DB_USERNAME_FROM_GITHUB=$(grep "^DB_USERNAME=" .env | cut -d'=' -f2)
+            DB_PASSWORD_FROM_GITHUB=$(grep "^DB_PASSWORD=" .env | cut -d'=' -f2)
+            DB_DATABASE_FROM_GITHUB=$(grep "^DB_DATABASE=" .env | cut -d'=' -f2)
+            
+            # Override only the connection details for local Docker
+            sed -i 's/^DB_HOST=.*/DB_HOST=postgres/' .env
+            sed -i 's/^DB_PORT=.*/DB_PORT=5432/' .env
+            sed -i 's/^REDIS_HOST=.*/REDIS_HOST=redis/' .env
+            sed -i 's/^REDIS_PORT=.*/REDIS_PORT=6379/' .env
+            
+            # Keep the database credentials from GitHub secrets
+            if [ -n "$DB_USERNAME_FROM_GITHUB" ]; then
+                sed -i "s/^DB_USERNAME=.*/DB_USERNAME=$DB_USERNAME_FROM_GITHUB/" .env
+            fi
+            if [ -n "$DB_PASSWORD_FROM_GITHUB" ]; then
+                sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD_FROM_GITHUB/" .env
+            fi
+            if [ -n "$DB_DATABASE_FROM_GITHUB" ]; then
+                sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE_FROM_GITHUB/" .env
+            fi
+            
+            print_success "GitHub secrets mapped for local Docker deployment"
+        fi
     elif [ -f ".env.production" ]; then
         cp .env.production .env
         print_success "Production environment file copied"
