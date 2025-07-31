@@ -2,19 +2,13 @@ import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { NotificationService } from './notification.service';
 
-@Processor('notification-queue')
+@Processor('notification')
 export class NotificationProcessor {
   constructor(private readonly notificationService: NotificationService) {}
 
-  @Process('send-email')
-  async handleSendEmail(job: Job) {
-    const { to, subject, text, html } = job.data;
-    return this.notificationService.processSendEmail(to, subject, text, html);
-  }
-
-  @Process('send-inapp')
+  @Process('send-notification')
   async handleSendInApp(job: Job) {
-    const { userId, content } = job.data;
-    return this.notificationService.processSendInApp(userId, content);
+    const { userId, message } = job.data;
+    return this.notificationService.processSendInApp(userId, message);
   }
 }
