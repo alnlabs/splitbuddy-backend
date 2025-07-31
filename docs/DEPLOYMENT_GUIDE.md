@@ -80,7 +80,7 @@ services:
       POSTGRES_USER: splitbuddy_user_local
       POSTGRES_PASSWORD: ngSystems@2019
       POSTGRES_DB: splitbuddy_db_local
-  
+
   backend:
     environment:
       DB_HOST: postgres
@@ -121,15 +121,17 @@ Store environment variables securely in GitHub repository secrets.
 #### Prerequisites
 
 1. **Install GitHub CLI**
+
    ```bash
    # macOS
    brew install gh
-   
+
    # Ubuntu/Debian
    sudo apt install gh
    ```
 
 2. **Authenticate with GitHub**
+
    ```bash
    gh auth login
    ```
@@ -191,22 +193,26 @@ Create your own environment file for production.
 ### Setup Process
 
 1. **Install GitHub CLI**
+
    ```bash
    brew install gh  # macOS
    sudo apt install gh  # Ubuntu
    ```
 
 2. **Authenticate**
+
    ```bash
    gh auth login
    ```
 
 3. **Set Repository**
+
    ```bash
    export GITHUB_REPO="your-username/splitbuddy-backend"
    ```
 
 4. **Create Secrets**
+
    ```bash
    ./scripts/setup-github-secrets.sh
    ```
@@ -221,23 +227,23 @@ Create your own environment file for production.
 
 The following environment variables are stored as GitHub secrets:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DB_HOST` | Database host | `postgres` |
-| `DB_PORT` | Database port | `5432` |
-| `DB_USERNAME` | Database username | `splitbuddy_user_prod` |
-| `DB_PASSWORD` | Database password | `your-secure-password` |
-| `DB_DATABASE` | Database name | `splitbuddy_prod` |
-| `JWT_SECRET` | JWT signing secret | `your-jwt-secret` |
-| `SMTP_HOST` | SMTP server | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP port | `587` |
-| `SMTP_USER` | SMTP username | `your-email@gmail.com` |
-| `SMTP_PASS` | SMTP password | `your-app-password` |
-| `SMTP_FROM` | From email address | `your-email@gmail.com` |
-| `REDIS_HOST` | Redis host | `redis` |
-| `REDIS_PORT` | Redis port | `6379` |
-| `APP_PORT` | Application port | `5900` |
-| `NODE_ENV` | Environment | `production` |
+| Variable      | Description        | Example                |
+| ------------- | ------------------ | ---------------------- |
+| `DB_HOST`     | Database host      | `postgres`             |
+| `DB_PORT`     | Database port      | `5432`                 |
+| `DB_USERNAME` | Database username  | `splitbuddy_user_prod` |
+| `DB_PASSWORD` | Database password  | `your-secure-password` |
+| `DB_DATABASE` | Database name      | `splitbuddy_prod`      |
+| `JWT_SECRET`  | JWT signing secret | `your-jwt-secret`      |
+| `SMTP_HOST`   | SMTP server        | `smtp.gmail.com`       |
+| `SMTP_PORT`   | SMTP port          | `587`                  |
+| `SMTP_USER`   | SMTP username      | `your-email@gmail.com` |
+| `SMTP_PASS`   | SMTP password      | `your-app-password`    |
+| `SMTP_FROM`   | From email address | `your-email@gmail.com` |
+| `REDIS_HOST`  | Redis host         | `redis`                |
+| `REDIS_PORT`  | Redis port         | `6379`                 |
+| `APP_PORT`    | Application port   | `5900`                 |
+| `NODE_ENV`    | Environment        | `production`           |
 
 ### Managing Secrets
 
@@ -456,11 +462,11 @@ CMD ["npm", "run", "start:prod"]
 
 ### Command Options
 
-| Option | Long Form | Description |
-|--------|-----------|-------------|
-| `-s` | `--skip-install` | Skip dependency installation |
-| `-g` | `--github` | Use GitHub secrets for environment |
-| `-h` | `--help` | Show help information |
+| Option | Long Form        | Description                        |
+| ------ | ---------------- | ---------------------------------- |
+| `-s`   | `--skip-install` | Skip dependency installation       |
+| `-g`   | `--github`       | Use GitHub secrets for environment |
+| `-h`   | `--help`         | Show help information              |
 
 ### Examples
 
@@ -674,4 +680,4 @@ After successful deployment:
 
 ---
 
-For additional support, check the main README.md or create an issue in the repository. 
+For additional support, check the main README.md or create an issue in the repository.

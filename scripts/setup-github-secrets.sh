@@ -57,34 +57,34 @@ get_repo_name() {
 # Create secrets from .env file
 create_secrets_from_env() {
     local env_file="$1"
-    
+
     if [ ! -f "$env_file" ]; then
         print_error "Environment file not found: $env_file"
         exit 1
     fi
-    
+
     print_status "Creating GitHub secrets from $env_file..."
-    
+
     # Read each line from .env file and create a secret
     while IFS= read -r line; do
         # Skip comments and empty lines
         if [[ $line =~ ^[[:space:]]*# ]] || [[ -z "${line// }" ]]; then
             continue
         fi
-        
+
         # Extract key and value
         if [[ $line =~ ^([^=]+)=(.*)$ ]]; then
             local key="${BASH_REMATCH[1]}"
             local value="${BASH_REMATCH[2]}"
-            
+
             # Remove quotes if present
             value=$(echo "$value" | sed 's/^"//;s/"$//;s/^'"'"'//;s/'"'"'$//')
-            
+
             print_status "Creating secret: $key"
             echo "$value" | gh secret set "$key" --repo "$GITHUB_REPO"
         fi
     done < "$env_file"
-    
+
     print_success "All secrets created successfully!"
 }
 
@@ -98,11 +98,11 @@ list_secrets() {
 main() {
     echo -e "${GREEN}🔧 GitHub Secrets Setup for SplitBuddy Backend${NC}"
     echo ""
-    
+
     check_gh_cli
     check_auth
     get_repo_name
-    
+
     echo ""
     echo "Choose an option:"
     echo "1. Create secrets from .env.production"
@@ -110,9 +110,9 @@ main() {
     echo "3. List existing secrets"
     echo "4. Exit"
     echo ""
-    
+
     read -p "Enter your choice (1-4): " choice
-    
+
     case $choice in
         1)
             create_secrets_from_env ".env.production"
@@ -135,4 +135,4 @@ main() {
 }
 
 # Run main function
-main "$@" 
+main "$@"

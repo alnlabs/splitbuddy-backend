@@ -16,6 +16,9 @@ RUN if [ "$SKIP_INSTALL" != "true" ]; then npm install --legacy-peer-deps; fi
 # Copy the rest of the application code
 COPY . .
 
+# Install dependencies if they were skipped (needed for build)
+RUN if [ "$SKIP_INSTALL" = "true" ]; then npm install --legacy-peer-deps; fi
+
 # Build the NestJS app
 RUN npm run build
 

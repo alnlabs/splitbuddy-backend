@@ -82,13 +82,13 @@ check_node() {
 
 check_production_env() {
     print_status "Checking production environment..."
-    
+
     if [ ! -f ".env.production" ] && [ ! -f ".env" ]; then
         print_error "No environment file found. Please run setup-production-env.sh first."
         print_status "Run: ./setup-production-env.sh"
         exit 1
     fi
-    
+
     if [ -f ".env.production" ]; then
         print_success "Production environment file found: .env.production"
     else
@@ -98,14 +98,14 @@ check_production_env() {
 
 fetch_env_from_github() {
     print_status "Fetching environment variables from GitHub..."
-    
+
     # Check if GitHub token is available
     if [ -z "$GITHUB_TOKEN" ]; then
         print_error "GITHUB_TOKEN environment variable is required for fetching secrets"
         print_status "Set GITHUB_TOKEN with your GitHub personal access token"
         exit 1
     fi
-    
+
     # Fetch environment variables from GitHub repository secrets
     # This requires GitHub Actions or a script to fetch secrets
     if command -v gh &> /dev/null; then

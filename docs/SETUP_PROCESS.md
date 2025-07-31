@@ -151,22 +151,26 @@ export GITHUB_TOKEN="your-personal-access-token"
 ### Setup Process
 
 1. **Install GitHub CLI**
+
    ```bash
    brew install gh  # macOS
    sudo apt install gh  # Ubuntu
    ```
 
 2. **Authenticate**
+
    ```bash
    gh auth login
    ```
 
 3. **Set Repository**
+
    ```bash
    export GITHUB_REPO="your-username/splitbuddy-backend"
    ```
 
 4. **Create Secrets**
+
    ```bash
    ./scripts/setup-github-secrets.sh
    ```
