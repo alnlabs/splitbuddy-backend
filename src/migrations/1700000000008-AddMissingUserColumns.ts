@@ -6,7 +6,7 @@ export class AddMissingUserColumns1700000000008 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add missing columns to users table
     await queryRunner.query(`
-      ALTER TABLE "users" 
+      ALTER TABLE "users"
       ADD COLUMN "phone" character varying,
       ADD COLUMN "middle_name" character varying,
       ADD COLUMN "gender" character varying,
@@ -44,7 +44,7 @@ export class AddMissingUserColumns1700000000008 implements MigrationInterface {
 
     // Add unique constraints
     await queryRunner.query(`
-      ALTER TABLE "users" 
+      ALTER TABLE "users"
       ADD CONSTRAINT "UQ_users_token" UNIQUE ("token"),
       ADD CONSTRAINT "UQ_users_activation_token" UNIQUE ("activation_token")
     `);
@@ -96,7 +96,7 @@ export class AddMissingUserColumns1700000000008 implements MigrationInterface {
 
     // Drop columns
     await queryRunner.query(`
-      ALTER TABLE "users" 
+      ALTER TABLE "users"
       DROP COLUMN "app_id",
       DROP COLUMN "client_id",
       DROP COLUMN "google_token",
@@ -132,4 +132,4 @@ export class AddMissingUserColumns1700000000008 implements MigrationInterface {
       DROP COLUMN "phone"
     `);
   }
-} 
+}
