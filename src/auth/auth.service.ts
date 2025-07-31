@@ -3,12 +3,26 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { LoginDto } from './dto/login.dto';
-import { GoogleAuthDto } from './google-auth.dto';
 import { OAuth2Client } from 'google-auth-library';
 import { NotificationService } from '../notification/notification.service';
 import { env } from '../config/env.config';
+
+// DTOs
+export class CreateUserDto {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName?: string;
+}
+
+export class LoginDto {
+  email: string;
+  password: string;
+}
+
+export class GoogleAuthDto {
+  idToken: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -23,7 +37,7 @@ export class AuthService {
     this.googleClient = new OAuth2Client(env.google.clientId);
   }
 
-  async validateUser(payload: any): Promise<User> {
+  async validateUser(payload: any): Promise<User | null> {
     const user = await this.userRepository.findOne({
       where: { id: payload.sub },
     });
@@ -61,6 +75,7 @@ export class AuthService {
       password, // In production, hash the password
       firstName,
       lastName,
+      username: email, // Use email as username for now
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -122,7 +137,8 @@ export class AuthService {
           email,
           firstName: given_name,
           lastName: family_name,
-          googleId: payload.sub,
+          username: email,
+          loginType: 'GOOGLE',
         });
         user = await this.userRepository.save(user);
       }
@@ -144,7 +160,7 @@ export class AuthService {
     }
   }
 
-  async getProfile(userId: number): Promise<User> {
+  async getProfile(userId: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -156,7 +172,7 @@ export class AuthService {
     return user;
   }
 
-  async updateProfile(userId: number, updateData: Partial<User>): Promise<User> {
+  async updateProfile(userId: string, updateData: Partial<User>): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -169,7 +185,7 @@ export class AuthService {
     return await this.userRepository.save(user);
   }
 
-  async changePassword(userId: number, oldPassword: string, newPassword: string): Promise<void> {
+  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -262,7 +278,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid token');
       }
 
-      user.emailVerified = true;
+      user.activated = true; // Use activated instead of emailVerified
       await this.userRepository.save(user);
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');

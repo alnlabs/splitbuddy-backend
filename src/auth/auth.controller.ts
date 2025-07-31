@@ -18,11 +18,6 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import {
-  GoogleSignupDto,
-  GoogleLoginDto,
-  GoogleVerifyDto,
-} from './google-auth.dto';
 
 interface UserRequest extends ExpressRequest {
   user: {
@@ -32,46 +27,21 @@ interface UserRequest extends ExpressRequest {
 }
 
 class RegisterDto {
-  @ApiProperty({ description: 'Unique username for the user' })
-  username: string;
-  @ApiProperty({ description: 'User email address' }) email: string;
+  @ApiProperty({ description: 'User email address' })
+  email: string;
   @ApiProperty({ description: 'User password (min 6 characters)' })
   password: string;
-  @ApiProperty({ description: 'User first name' }) firstName: string;
+  @ApiProperty({ description: 'User first name' })
+  firstName: string;
   @ApiProperty({ required: false, description: 'User last name' })
   lastName?: string;
-  @ApiProperty({ required: false, description: 'User phone number' })
-  phone?: string;
-  @ApiProperty({ required: false, description: 'User middle name' })
-  middleName?: string;
-  @ApiProperty({ required: false, description: 'User date of birth' })
-  dateOfBirth?: string;
-  @ApiProperty({ required: false, description: 'User gender' }) gender?: string;
-  @ApiProperty({ required: false, description: 'User nationality' })
-  nationality?: string;
-  @ApiProperty({ required: false, description: 'User address' })
-  address?: string;
-  @ApiProperty({ required: false, description: 'User city' }) city?: string;
-  @ApiProperty({ required: false, description: 'User state' }) state?: string;
-  @ApiProperty({ required: false, description: 'User country' })
-  country?: string;
-  @ApiProperty({ required: false, description: 'User zip code' })
-  zipCode?: string;
-  @ApiProperty({ required: false, description: 'Facebook profile URL' })
-  facebookProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'Twitter profile URL' })
-  twitterProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'LinkedIn profile URL' })
-  linkedinProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'GitHub profile URL' })
-  githubProfileUrl?: string;
-  @ApiProperty({ required: false, description: 'Personal website URL' })
-  websiteUrl?: string;
 }
 
 class LoginDto {
-  @ApiProperty({ description: 'Username or email' }) username: string;
-  @ApiProperty({ description: 'User password' }) password: string;
+  @ApiProperty({ description: 'User email' })
+  email: string;
+  @ApiProperty({ description: 'User password' })
+  password: string;
 }
 
 class UpdateProfileDto {
@@ -85,13 +55,16 @@ class UpdateProfileDto {
   middleName?: string;
   @ApiProperty({ required: false, description: 'User date of birth' })
   dateOfBirth?: string;
-  @ApiProperty({ required: false, description: 'User gender' }) gender?: string;
+  @ApiProperty({ required: false, description: 'User gender' })
+  gender?: string;
   @ApiProperty({ required: false, description: 'User nationality' })
   nationality?: string;
   @ApiProperty({ required: false, description: 'User address' })
   address?: string;
-  @ApiProperty({ required: false, description: 'User city' }) city?: string;
-  @ApiProperty({ required: false, description: 'User state' }) state?: string;
+  @ApiProperty({ required: false, description: 'User city' })
+  city?: string;
+  @ApiProperty({ required: false, description: 'User state' })
+  state?: string;
   @ApiProperty({ required: false, description: 'User country' })
   country?: string;
   @ApiProperty({ required: false, description: 'User zip code' })
@@ -111,7 +84,8 @@ class UpdateProfileDto {
 }
 
 class ChangePasswordDto {
-  @ApiProperty({ description: 'Current password' }) currentPassword: string;
+  @ApiProperty({ description: 'Current password' })
+  currentPassword: string;
   @ApiProperty({ description: 'New password (min 6 characters)' })
   newPassword: string;
 }
@@ -122,13 +96,20 @@ class RequestPasswordResetDto {
 }
 
 class ResetPasswordDto {
-  @ApiProperty({ description: 'Reset token received via email' }) token: string;
+  @ApiProperty({ description: 'Reset token received via email' })
+  token: string;
   @ApiProperty({ description: 'New password (min 6 characters)' })
   newPassword: string;
 }
 
 class RequestEmailVerificationDto {
-  @ApiProperty({ description: 'Email address to verify' }) email: string;
+  @ApiProperty({ description: 'Email address to verify' })
+  email: string;
+}
+
+class GoogleAuthDto {
+  @ApiProperty({ description: 'Google ID token' })
+  idToken: string;
 }
 
 @ApiTags('Authentication')
@@ -139,36 +120,34 @@ export class AuthController {
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
-  @ApiResponse({ status: 409, description: 'User already exists' })
+  @ApiResponse({ status: 400, description: 'Bad request - User already exists' })
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   @Post('login')
-  @ApiOperation({ summary: 'Login user and get JWT token' })
+  @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid credentials' })
   async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.username, dto.password);
+    return this.authService.login(dto);
   }
 
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
   @Get('profile')
-  @ApiOperation({ summary: 'Get current user profile' })
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfile(@Request() req: UserRequest) {
     return this.authService.getProfile(req.user.userId);
   }
 
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
   @Patch('profile')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Update user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async updateProfile(
     @Request() req: UserRequest,
@@ -177,13 +156,13 @@ export class AuthController {
     return this.authService.updateProfile(req.user.userId, dto);
   }
 
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
   @Post('change-password')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Change user password' })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid current password' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid old password' })
   async changePassword(
     @Request() req: UserRequest,
     @Body() dto: ChangePasswordDto,
@@ -196,17 +175,16 @@ export class AuthController {
   }
 
   @Post('request-password-reset')
-  @ApiOperation({ summary: 'Request password reset email' })
-  @ApiResponse({ status: 200, description: 'Password reset email sent' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({ status: 200, description: 'Reset email sent if user exists' })
   async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
     return this.authService.requestPasswordReset(dto.email);
   }
 
   @Post('reset-password')
-  @ApiOperation({ summary: 'Reset password using token' })
+  @ApiOperation({ summary: 'Reset password with token' })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid token' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.newPassword);
   }
@@ -214,73 +192,32 @@ export class AuthController {
   @Post('request-email-verification')
   @ApiOperation({ summary: 'Request email verification' })
   @ApiResponse({ status: 200, description: 'Verification email sent' })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 400, description: 'Bad request - User not found' })
   async requestEmailVerification(@Body() dto: RequestEmailVerificationDto) {
     return this.authService.requestEmailVerification(dto.email);
   }
 
   @Get('verify-email')
-  @ApiOperation({ summary: 'Verify email using token' })
+  @ApiOperation({ summary: 'Verify email with token' })
   @ApiResponse({ status: 200, description: 'Email verified successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid token' })
   async verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
   }
 
-  @Post('google-signup')
-  @ApiOperation({ summary: 'Sign up with Google OAuth' })
-  @ApiResponse({ status: 201, description: 'User registered with Google' })
-  @ApiResponse({ status: 400, description: 'Invalid Google token' })
-  async googleSignup(@Body() dto: GoogleSignupDto) {
-    return this.authService.googleSignup(dto);
-  }
-
-  @Post('google-login')
+  @Post('google/login')
   @ApiOperation({ summary: 'Login with Google OAuth' })
-  @ApiResponse({ status: 200, description: 'Login successful' })
-  @ApiResponse({ status: 401, description: 'Invalid Google token' })
-  async googleLogin(@Body() dto: GoogleLoginDto) {
+  @ApiResponse({ status: 200, description: 'Google login successful' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid Google token' })
+  async googleLogin(@Body() dto: GoogleAuthDto) {
     return this.authService.googleLogin(dto);
   }
 
-  @Post('google-verify')
-  @ApiOperation({ summary: 'Verify Google OAuth token' })
+  @Post('google/verify')
+  @ApiOperation({ summary: 'Verify Google ID token' })
   @ApiResponse({ status: 200, description: 'Token verified successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid token' })
-  async googleVerify(@Body() dto: GoogleVerifyDto) {
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid token' })
+  async googleVerify(@Body() dto: GoogleAuthDto) {
     return this.authService.googleVerify(dto.idToken);
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
-  @Post('logout')
-  @ApiOperation({ summary: 'Logout user' })
-  @ApiResponse({ status: 200, description: 'Logout successful' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async logout(@Request() req: UserRequest) {
-    return this.authService.logout(req.user.userId);
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
-  @Post('create-default-data')
-  @ApiOperation({ summary: 'Create default data for user' })
-  @ApiResponse({
-    status: 201,
-    description: 'Default data created successfully',
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async createDefaultData(@Request() req: UserRequest) {
-    return this.authService.createDefaultData(req.user.userId);
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
-  @Get('check-default-data-status')
-  @ApiOperation({ summary: 'Check default data status for user' })
-  @ApiResponse({ status: 200, description: 'Default data status retrieved' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async checkDefaultDataStatus(@Request() req: UserRequest) {
-    return this.authService.checkDefaultDataStatus(req.user.userId);
   }
 }
