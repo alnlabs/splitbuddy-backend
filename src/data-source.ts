@@ -10,7 +10,7 @@ const createDataSource = async () => {
     port: Number(env.DB_PORT),
     username: env.DB_USERNAME,
     password: env.DB_PASSWORD,
-    database: env.DB_NAME,
+    database: env.DB_DATABASE,
     entities: [join(__dirname, 'entities', '*.ts')],
     migrations: [join(__dirname, 'migrations', '*.ts')],
     synchronize: false,
