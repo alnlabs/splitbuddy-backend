@@ -252,7 +252,10 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   @Post('create-default-data')
   @ApiOperation({ summary: 'Create default data for user' })
-  @ApiResponse({ status: 200, description: 'Default data created successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Default data created successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async createDefaultData(@Request() req: UserRequest) {
     return this.authService.createDefaultData(req.user.userId);

@@ -22,6 +22,7 @@ This guide provides a comprehensive setup process for the SplitBuddy backend app
 ## 🎯 Prerequisites
 
 ### System Requirements
+
 - **Node.js**: v18+ (recommended v20+)
 - **Docker**: v20+ with Docker Compose
 - **Git**: Latest version
@@ -29,11 +30,13 @@ This guide provides a comprehensive setup process for the SplitBuddy backend app
 - **Redis**: v6+ (for queue management)
 
 ### Development Tools
+
 - **Code Editor**: VS Code, WebStorm, or similar
 - **API Testing**: Postman, Insomnia, or similar
 - **Database Client**: pgAdmin, DBeaver, or similar
 
 ### Production Requirements
+
 - **Linux Server**: Ubuntu 20.04+ or CentOS 8+
 - **Domain Name**: For SSL certificates
 - **Email Service**: For notifications
@@ -42,17 +45,20 @@ This guide provides a comprehensive setup process for the SplitBuddy backend app
 ## ⚡ Quick Start
 
 ### 1. Clone Repository
+
 ```bash
 git clone <repository-url>
 cd splitbuddy-backend
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 3. Setup Environment
+
 ```bash
 # Create environment file
 cp .env.example .env
@@ -63,6 +69,7 @@ chmod +x setup-env.sh
 ```
 
 ### 4. Start Local Development
+
 ```bash
 # Using Docker Compose (recommended)
 docker-compose -f docker-compose.local.yml up -d
@@ -72,6 +79,7 @@ npm run start:dev
 ```
 
 ### 5. Access Application
+
 - **API**: http://localhost:5900
 - **Swagger Docs**: http://localhost:5900/api/v1/docs
 - **Health Check**: http://localhost:5900/api/v1/
@@ -81,6 +89,7 @@ npm run start:dev
 ### Local Development Setup
 
 #### Step 1: Environment Configuration
+
 ```bash
 # Create environment file
 cat > .env << EOF
@@ -116,6 +125,7 @@ EOF
 ```
 
 #### Step 2: Database Setup
+
 ```bash
 # Start PostgreSQL with Docker
 docker run -d \
@@ -134,6 +144,7 @@ npm run migration:run
 ```
 
 #### Step 3: Start Application
+
 ```bash
 # Development mode
 npm run start:dev
@@ -145,6 +156,7 @@ docker-compose -f docker-compose.local.yml up -d
 ### Production Deployment Setup
 
 #### Step 1: Server Preparation
+
 ```bash
 # Update system
 sudo apt update && sudo apt upgrade -y
@@ -167,6 +179,7 @@ sudo apt install nginx -y
 ```
 
 #### Step 2: Database Setup
+
 ```bash
 # Create database user
 sudo -u postgres psql -c "CREATE USER splitbuddy WITH PASSWORD 'your-secure-password';"
@@ -175,6 +188,7 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE splitbuddy TO splitbu
 ```
 
 #### Step 3: Application Deployment
+
 ```bash
 # Clone repository
 git clone <repository-url> /opt/splitbuddy
@@ -202,7 +216,9 @@ pm2 startup
 ## 🗄️ Database Setup
 
 ### Schema Overview
+
 The application uses the following main entities:
+
 - **Users**: Authentication and profile management
 - **Groups**: Expense sharing groups
 - **Expenses**: Financial transactions
@@ -212,6 +228,7 @@ The application uses the following main entities:
 - **Notifications**: User notifications
 
 ### Migration Process
+
 ```bash
 # Generate migration
 npm run migration:generate -- -n MigrationName
@@ -227,6 +244,7 @@ npm run migration:show
 ```
 
 ### Seed Data
+
 ```bash
 # Create default categories
 npm run seed:categories
@@ -243,6 +261,7 @@ npm run seed:users
 ### Required Environment Variables
 
 #### Database
+
 ```env
 DB_HOST=localhost
 DB_PORT=5432
@@ -252,18 +271,21 @@ DB_DATABASE=splitbuddy
 ```
 
 #### JWT Authentication
+
 ```env
 JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRES_IN=7d
 ```
 
 #### Redis (for queues)
+
 ```env
 REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
 #### Email (optional)
+
 ```env
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -272,6 +294,7 @@ SMTP_PASS=your-app-password
 ```
 
 #### Google OAuth (optional)
+
 ```env
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
@@ -280,6 +303,7 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 ### Environment-Specific Configurations
 
 #### Development
+
 ```env
 NODE_ENV=development
 PORT=5900
@@ -287,6 +311,7 @@ LOG_LEVEL=debug
 ```
 
 #### Production
+
 ```env
 NODE_ENV=production
 PORT=3000
@@ -296,6 +321,7 @@ LOG_LEVEL=info
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```bash
 # Run all tests
 npm run test
@@ -308,6 +334,7 @@ npm run test:watch
 ```
 
 ### Integration Tests
+
 ```bash
 # Run e2e tests
 npm run test:e2e
@@ -317,6 +344,7 @@ npm run test:e2e -- --testNamePattern="Auth"
 ```
 
 ### API Testing
+
 ```bash
 # Test health endpoint
 curl http://localhost:5900/api/v1/
@@ -333,6 +361,7 @@ curl http://localhost:5900/api/v1/docs
 ### Common Issues
 
 #### Database Connection Issues
+
 ```bash
 # Check if PostgreSQL is running
 sudo systemctl status postgresql
@@ -345,6 +374,7 @@ psql -h localhost -U postgres -d splitbuddy
 ```
 
 #### Port Conflicts
+
 ```bash
 # Check what's using port 5900
 sudo lsof -i :5900
@@ -354,6 +384,7 @@ sudo kill -9 <PID>
 ```
 
 #### Docker Issues
+
 ```bash
 # Check Docker status
 docker ps
@@ -366,6 +397,7 @@ docker system prune -a
 ```
 
 #### Memory Issues
+
 ```bash
 # Check memory usage
 free -h
@@ -375,6 +407,7 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 ```
 
 ### Log Analysis
+
 ```bash
 # View application logs
 pm2 logs splitbuddy
@@ -389,6 +422,7 @@ grep ERROR logs/application.log
 ## 📁 What Gets Created
 
 ### Directories
+
 ```
 splitbuddy-backend/
 ├── src/                    # Source code
@@ -401,6 +435,7 @@ splitbuddy-backend/
 ```
 
 ### Database Tables
+
 - `users` - User accounts
 - `user_groups` - Groups
 - `expenses` - Financial transactions
@@ -411,6 +446,7 @@ splitbuddy-backend/
 - `transactions` - Financial records
 
 ### Configuration Files
+
 - `.env` - Environment variables
 - `docker-compose.yml` - Docker configuration
 - `package.json` - Dependencies
@@ -420,6 +456,7 @@ splitbuddy-backend/
 ## ⚡ Quick Reference Commands
 
 ### Development
+
 ```bash
 # Start development server
 npm run start:dev
@@ -435,6 +472,7 @@ npm run build
 ```
 
 ### Database
+
 ```bash
 # Run migrations
 npm run migration:run
@@ -447,6 +485,7 @@ npm run migration:revert
 ```
 
 ### Production
+
 ```bash
 # Start with PM2
 pm2 start dist/main.js --name splitbuddy
@@ -462,6 +501,7 @@ pm2 monit
 ```
 
 ### Docker
+
 ```bash
 # Build image
 docker build -t splitbuddy .
@@ -479,24 +519,28 @@ docker-compose down
 ## 🔒 Security Considerations
 
 ### Environment Variables
+
 - Never commit `.env` files to version control
 - Use strong, unique secrets for JWT
 - Rotate secrets regularly
 - Use environment-specific configurations
 
 ### Database Security
+
 - Use strong passwords for database users
 - Limit database access to application only
 - Enable SSL for database connections
 - Regular database backups
 
 ### API Security
+
 - All business logic endpoints require authentication
 - Use HTTPS in production
 - Implement rate limiting
 - Validate all input data
 
 ### File Uploads
+
 - Validate file types and sizes
 - Store files outside web root
 - Use secure file naming
@@ -505,6 +549,7 @@ docker-compose down
 ## 📊 Monitoring
 
 ### Application Monitoring
+
 ```bash
 # PM2 monitoring
 pm2 monit
@@ -520,6 +565,7 @@ free -h
 ```
 
 ### Log Monitoring
+
 ```bash
 # Application logs
 tail -f logs/application.log
@@ -532,6 +578,7 @@ tail -f /var/log/nginx/access.log
 ```
 
 ### Database Monitoring
+
 ```bash
 # Check database size
 psql -c "SELECT pg_size_pretty(pg_database_size('splitbuddy'));"
@@ -543,6 +590,7 @@ psql -c "SELECT table_name, pg_size_pretty(pg_total_relation_size(table_name)) F
 ## 🎯 Next Steps
 
 ### Immediate Actions
+
 1. **Test all endpoints** using Swagger documentation
 2. **Verify authentication** works correctly
 3. **Test database operations** with sample data
@@ -550,6 +598,7 @@ psql -c "SELECT table_name, pg_size_pretty(pg_total_relation_size(table_name)) F
 5. **Set up monitoring** and alerting
 
 ### Future Enhancements
+
 1. **Add more test coverage**
 2. **Implement caching** for better performance
 3. **Add file upload** functionality
@@ -560,6 +609,7 @@ psql -c "SELECT table_name, pg_size_pretty(pg_total_relation_size(table_name)) F
 8. **Implement backup** strategies
 
 ### Maintenance Tasks
+
 1. **Regular security updates**
 2. **Database maintenance**
 3. **Log rotation**
@@ -571,8 +621,9 @@ psql -c "SELECT table_name, pg_size_pretty(pg_total_relation_size(table_name)) F
 ## 📞 Support
 
 For additional support:
+
 - Check the [Troubleshooting Guide](../TROUBLESHOOTING.md)
 - Review [Security Best Practices](../SECURITY.md)
 - Consult the [API Documentation](../README.md)
 
-**Happy coding! 🚀** 
+**Happy coding! 🚀**
