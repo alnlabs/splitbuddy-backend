@@ -1,496 +1,444 @@
 # SplitBuddy Backend Setup Process
 
-## 📋 Table of Contents
+This document provides a comprehensive guide for setting up the SplitBuddy backend for both local development and production deployment.
 
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Detailed Setup](#detailed-setup)
-- [Database Setup](#database-setup)
-- [Environment Configuration](#environment-configuration)
-- [Running the Application](#running-the-application)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
+## Table of Contents
 
-## 🎯 Prerequisites
+1. [Prerequisites](#prerequisites)
+2. [Local Development Setup](#local-development-setup)
+3. [Production Deployment](#production-deployment)
+4. [GitHub Secrets Integration](#github-secrets-integration)
+5. [Environment Configuration](#environment-configuration)
+6. [Database Setup](#database-setup)
+7. [Troubleshooting](#troubleshooting)
+
+---
+
+## Prerequisites
 
 ### Required Software
 
 - **Node.js** (v18 or higher)
-- **npm** or **yarn**
 - **Docker** and **Docker Compose**
 - **Git**
+- **npm** or **yarn**
 
-### System Requirements
+### Optional for Production
 
-- **RAM**: 4GB minimum, 8GB recommended
-- **Storage**: 2GB free space
-- **OS**: macOS, Linux, or Windows
+- **GitHub CLI** (for GitHub secrets integration)
+- **Linux VPS** (for production deployment)
 
-## 🚀 Quick Start
+---
 
-### 1. Clone and Install
+## Local Development Setup
+
+### Step 1: Clone Repository
 
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd splitbuddy-backend
+```
 
-# Install dependencies
+### Step 2: Install Dependencies
+
+```bash
 npm install
 ```
 
-### 2. Start with Docker (Recommended)
+### Step 3: Start Local Development Environment
 
 ```bash
-# Start all services (PostgreSQL, Redis, Backend)
+# Start with Docker Compose (recommended)
+./deploy.sh local-start
+
+# Or manually
 npm run docker:dev
-
-# Check if services are running
-docker ps
 ```
 
-### 3. Run Database Migrations
+### Step 4: Verify Setup
+
+- **API**: http://localhost:5900
+- **Documentation**: http://localhost:5900/api/docs
+- **Health Check**: http://localhost:5900/api/v1/db-test
+
+---
+
+## Production Deployment
+
+### Option 1: Local Docker Deployment (Default)
 
 ```bash
-# Run all migrations
-npm run migration:run
+# Deploy to production using local Docker
+./deploy.sh production
+
+# Fast deployment (skip dependency installation)
+./deploy.sh production -s
+
+# Check status
+./deploy.sh status
 ```
 
-### 4. Create Default Data
+### Option 2: GitHub Secrets Integration (Recommended)
 
-```bash
-# Create default categories and payment methods
-npm run create-default-data
-```
-
-### 5. Test the Application
-
-```bash
-# Test database connection
-curl http://localhost:5900/api/v1/db-test
-
-# Check API documentation
-open http://localhost:5900/api/docs
-```
-
-## 🔧 Detailed Setup
-
-### Local Development Setup
-
-#### Option 1: Docker Compose (Recommended)
-
-**Start Services:**
-
-```bash
-# Start PostgreSQL and Redis
-npm run docker:dev
-
-# Check logs
-docker logs splitbuddy_backend
-```
-
-**Stop Services:**
-
-```bash
-# Stop all services
-npm run docker:down
-```
-
-#### Option 2: Manual Setup
-
-**1. Install PostgreSQL:**
-
-```bash
-# macOS (using Homebrew)
-brew install postgresql
-brew services start postgresql
-
-# Ubuntu/Debian
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-```
-
-**2. Create Database:**
-
-```bash
-# Connect to PostgreSQL
-sudo -u postgres psql
-
-# Create database and user
-CREATE DATABASE splitbuddy_db_local;
-CREATE USER splitbuddy_user_local WITH PASSWORD 'ngSystems@2019';
-GRANT ALL PRIVILEGES ON DATABASE splitbuddy_db_local TO splitbuddy_user_local;
-\q
-```
-
-**3. Install Redis:**
+#### Step 1: Install GitHub CLI
 
 ```bash
 # macOS
-brew install redis
-brew services start redis
+brew install gh
 
 # Ubuntu/Debian
-sudo apt install redis-server
-sudo systemctl start redis-server
-sudo systemctl enable redis-server
+sudo apt install gh
+
+# Or download from: https://cli.github.com/
 ```
 
-### Environment Configuration
+#### Step 2: Authenticate with GitHub
 
-#### Local Environment Variables
-
-Create `.env` file in the root directory:
-
-```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=splitbuddy_user_local
-DB_PASSWORD=ngSystems@2019
-DB_NAME=splitbuddy_db_local
-
-# JWT Configuration
-JWT_SECRET=iv570SrW+9fhKVvRrgW2cjiPXg7e+vR9dJ5xbJ1W4Ww=
-
-# Email Configuration (Gmail)
-SMTP_USER=alnlabs1@gmail.com
-SMTP_PASS=mszo jwpz srgu uhwh
-SMTP_FROM=alnlabs1@gmail.com
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-
-# Google OAuth
-GOOGLE_CLIENT_ID=1039447696099-ftbfa65lep53cm928a862bl6m2e9gaq9.apps.googleusercontent.com
-
-# Application Configuration
-APP_PORT=5900
-NODE_ENV=local
-
-# Redis Configuration
-REDIS_HOST=localhost
-REDIS_PORT=6379
+```bash
+gh auth login
 ```
 
-#### Production Environment Variables
+#### Step 3: Set up GitHub Secrets
 
-For production, use different values:
+```bash
+# Set repository name
+export GITHUB_REPO="your-username/splitbuddy-backend"
 
-```env
-# Database Configuration
-DB_HOST=your-production-db-host
+# Run the setup script
+./scripts/setup-github-secrets.sh
+```
+
+#### Step 4: Deploy with GitHub Secrets
+
+```bash
+# Set GitHub token
+export GITHUB_TOKEN="your-personal-access-token"
+
+# Deploy with GitHub secrets
+./deploy.sh production -g
+
+# Fast deployment with GitHub secrets
+./deploy.sh production -s -g
+```
+
+### Option 3: Manual Environment Setup
+
+#### Step 1: Create Production Environment
+
+```bash
+# Run the interactive setup
+./setup-production-env.sh
+```
+
+#### Step 2: Deploy
+
+```bash
+./deploy.sh production
+```
+
+---
+
+## GitHub Secrets Integration
+
+### Benefits
+
+- **Security**: No secrets in code or files
+- **Access Control**: Only authorized users can access
+- **Audit Trail**: GitHub logs all secret access
+- **Easy Rotation**: Update secrets without code changes
+- **Team Collaboration**: Share secrets across team
+
+### Setup Process
+
+1. **Install GitHub CLI**
+   ```bash
+   brew install gh  # macOS
+   sudo apt install gh  # Ubuntu
+   ```
+
+2. **Authenticate**
+   ```bash
+   gh auth login
+   ```
+
+3. **Set Repository**
+   ```bash
+   export GITHUB_REPO="your-username/splitbuddy-backend"
+   ```
+
+4. **Create Secrets**
+   ```bash
+   ./scripts/setup-github-secrets.sh
+   ```
+
+5. **Deploy**
+   ```bash
+   export GITHUB_TOKEN="your-token"
+   ./deploy.sh production -g
+   ```
+
+### Required Secrets
+
+The following environment variables are stored as GitHub secrets:
+
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `DB_DATABASE`
+- `JWT_SECRET`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `APP_PORT`
+- `NODE_ENV`
+
+---
+
+## Environment Configuration
+
+### Local Development
+
+The local environment uses Docker Compose with predefined settings:
+
+```yaml
+# docker-compose.local.yml
+services:
+  postgres:
+    environment:
+      POSTGRES_USER: splitbuddy_user_local
+      POSTGRES_PASSWORD: ngSystems@2019
+      POSTGRES_DB: splitbuddy_db_local
+```
+
+### Production Environment
+
+Production uses secure environment variables:
+
+```bash
+# Database
+DB_HOST=postgres
 DB_PORT=5432
-DB_USERNAME=your-production-user
+DB_USERNAME=splitbuddy_user_prod
 DB_PASSWORD=your-secure-password
-DB_NAME=splitbuddy_db_prod
+DB_DATABASE=splitbuddy_prod
 
-# JWT Configuration (Generate a secure secret)
-JWT_SECRET=your-secure-jwt-secret
+# Redis
+REDIS_HOST=redis
+REDIS_PORT=6379
 
-# Email Configuration
-SMTP_USER=your-production-email
-SMTP_PASS=your-production-email-password
-SMTP_FROM=your-production-email
+# JWT
+JWT_SECRET=your-jwt-secret
+
+# SMTP
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM=your-email@gmail.com
 
-# Google OAuth
-GOOGLE_CLIENT_ID=your-production-google-client-id
-
-# Application Configuration
-APP_PORT=3000
+# App
+APP_PORT=5900
 NODE_ENV=production
-
-# Redis Configuration
-REDIS_HOST=your-production-redis-host
-REDIS_PORT=6379
 ```
 
-## 🗄️ Database Setup
+---
 
-### Running Migrations
+## Database Setup
 
-**Check current migration status:**
+### Automatic Setup (Recommended)
+
+The deployment script automatically:
+
+1. **Creates Database Users**
+   - `splitbuddy_user_local` (development)
+   - `splitbuddy_user_prod` (production)
+
+2. **Creates Databases**
+   - `splitbuddy_db_local` (development)
+   - `splitbuddy_prod` (production)
+
+3. **Runs Migrations**
+   - Creates all tables and indexes
+   - Sets up foreign key relationships
+
+4. **Creates Default Data**
+   - Sample categories and payment methods
+
+### Manual Database Setup
+
+If you need to set up the database manually:
 
 ```bash
-npm run typeorm -- migration:show
-```
+# Connect to PostgreSQL
+psql -h localhost -U postgres
 
-**Run all migrations:**
+# Create user and database
+CREATE USER splitbuddy_user_prod WITH PASSWORD 'your-password';
+CREATE DATABASE splitbuddy_prod OWNER splitbuddy_user_prod;
+GRANT ALL PRIVILEGES ON DATABASE splitbuddy_prod TO splitbuddy_user_prod;
 
-```bash
+# Exit psql
+\q
+
+# Run migrations
 npm run migration:run
 ```
 
-**Generate new migration:**
+---
+
+## Deployment Script Commands
+
+### Local Development
 
 ```bash
-npm run migration:generate -- src/migrations/YourMigrationName
+./deploy.sh local-start    # Start local development
+./deploy.sh local-stop     # Stop local development
+./deploy.sh local          # Alias for local-start
 ```
 
-**Revert last migration:**
+### Production Deployment
 
 ```bash
-npm run migration:revert
+./deploy.sh production     # Deploy to production
+./deploy.sh deploy         # Alias for production
+./deploy.sh prod           # Alias for production
 ```
 
-### Current Migration Files
-
-The project has the following migrations:
-
-1. `1753260075994-InitialMigration.ts` - Initial database schema
-2. `1753273597583-AddTransactionTable.ts` - Transaction table
-3. `1753274000000-AddNotificationsTable.ts` - Notifications table
-4. `1753275000000-CreateDefaultDataForExistingUsers.ts` - Default data
-5. `1753276000000-AddIsSharedToUserGroups.ts` - Group sharing
-6. `1753277000000-UpdateIsSharedDefault.ts` - Default sharing settings
-7. `1753278000000-AddDescriptionToUserGroups.ts` - Group descriptions
-
-### Database Schema
-
-**Key Tables:**
-
-- `users` - User accounts and profiles
-- `expenses` - Expense records
-- `expense_splits` - Expense splitting logic
-- `groups` - Expense groups
-- `user_groups` - Group memberships
-- `categories` - Expense categories
-- `payment_methods` - Payment methods
-- `transactions` - Financial transactions
-- `notifications` - User notifications
-
-## 🚀 Running the Application
-
-### Development Mode
+### Options
 
 ```bash
-# Start in development mode with hot reload
-npm run start:dev
+./deploy.sh production -s  # Skip dependency installation
+./deploy.sh production -g  # Use GitHub secrets
+./deploy.sh production -s -g  # Both options
 ```
 
-### Production Mode
+### Management
 
 ```bash
-# Build the application
-npm run build
-
-# Start in production mode
-npm run start:prod
+./deploy.sh restart        # Restart production
+./deploy.sh status         # Check application status
+./deploy.sh help           # Show help
 ```
 
-### Docker Mode
+---
 
-```bash
-# Start with Docker Compose
-npm run docker:dev
-
-# View logs
-docker logs -f splitbuddy_backend
-```
-
-## 🧪 Testing
-
-### API Testing
-
-```bash
-# Test database connection
-curl http://localhost:5900/api/v1/db-test
-
-# Test health check
-curl http://localhost:5900/api/v1/
-
-# Test Swagger documentation
-open http://localhost:5900/api/docs
-```
-
-### Unit Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:cov
-```
-
-### E2E Tests
-
-```bash
-# Run end-to-end tests
-npm run test:e2e
-```
-
-## 🔧 Available Scripts
-
-### Development Scripts
-
-```bash
-npm run start:dev      # Start in development mode
-npm run start:debug    # Start in debug mode
-npm run build          # Build the application
-npm run lint           # Run ESLint
-npm run format         # Format code with Prettier
-```
-
-### Database Scripts
-
-```bash
-npm run migration:run      # Run migrations
-npm run migration:revert   # Revert last migration
-npm run migration:generate # Generate new migration
-```
-
-### Docker Scripts
-
-```bash
-npm run docker:dev    # Start with Docker Compose
-npm run docker:down   # Stop Docker services
-```
-
-### Data Scripts
-
-```bash
-npm run create-default-data           # Create default categories/payment methods
-npm run create-default-data-for-user # Create default data for specific user
-```
-
-### API Documentation
-
-```bash
-npm run export:postman # Export API to Postman collection
-```
-
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-**1. Database Connection Failed**
+#### 1. Port Already in Use
+
+```bash
+# Stop existing containers
+./deploy.sh local-stop
+docker-compose -f docker-compose.prod.yml down
+
+# Or kill process using port 5900
+sudo lsof -i :5900
+sudo kill -9 <PID>
+```
+
+#### 2. Database Connection Failed
 
 ```bash
 # Check if PostgreSQL is running
-sudo systemctl status postgresql
+docker ps | grep postgres
 
-# Check database credentials
-psql -h localhost -U splitbuddy_user_local -d splitbuddy_db_local
+# Restart database
+docker-compose -f docker-compose.prod.yml restart postgres
 ```
 
-**2. Port Already in Use**
+#### 3. GitHub Secrets Not Working
 
 ```bash
-# Check what's using port 5900
-lsof -i :5900
+# Check authentication
+gh auth status
 
-# Kill the process
-kill -9 <PID>
+# Check repository access
+gh repo view
+
+# Verify token
+echo $GITHUB_TOKEN
 ```
 
-**3. Docker Issues**
+#### 4. Migration Errors
 
 ```bash
-# Check Docker status
-docker ps
-
-# Restart Docker services
-docker-compose -f docker-compose.local.yml down -v
-docker-compose -f docker-compose.local.yml up --build -d
+# Reset database
+docker-compose -f docker-compose.prod.yml down -v
+./deploy.sh production
 ```
 
-**4. Migration Errors**
+#### 5. Docker Build Issues
 
 ```bash
-# Check migration status
-npm run typeorm -- migration:show
+# Clean Docker cache
+docker system prune -a
 
-# Reset database (WARNING: This will delete all data)
-dropdb splitbuddy_db_local
-createdb splitbuddy_db_local
-npm run migration:run
+# Rebuild without cache
+docker-compose -f docker-compose.prod.yml build --no-cache
 ```
 
-**5. Redis Connection Issues**
+### Logs
 
 ```bash
-# Check Redis status
-redis-cli ping
+# View all logs
+docker-compose -f docker-compose.prod.yml logs -f
 
-# Restart Redis
-sudo systemctl restart redis-server
+# View specific service
+docker-compose -f docker-compose.prod.yml logs -f app
+
+# View local development logs
+docker-compose -f docker-compose.local.yml logs -f
 ```
 
-### Logs and Debugging
-
-**View Application Logs:**
+### Health Checks
 
 ```bash
-# Development mode
-npm run start:dev
+# Check application health
+curl http://localhost:5900/api/v1/db-test
 
-# Docker mode
-docker logs -f splitbuddy_backend
+# Check database connection
+docker-compose -f docker-compose.prod.yml exec app npm run migration:run
+
+# Check Redis connection
+docker-compose -f docker-compose.prod.yml exec app node -e "
+const Redis = require('ioredis');
+const redis = new Redis(process.env.REDIS_HOST, process.env.REDIS_PORT);
+redis.ping().then(() => console.log('Redis OK')).catch(console.error);
+"
 ```
 
-**Enable Debug Logging:**
+---
 
-```bash
-# Set debug environment
-NODE_ENV=development npm run start:dev
-```
+## Security Best Practices
 
-## 📊 What Gets Created
+1. **Use GitHub Secrets** for production environment variables
+2. **Generate Strong Passwords** for database users
+3. **Use HTTPS** in production
+4. **Regular Updates** of dependencies
+5. **Monitor Logs** for suspicious activity
+6. **Backup Database** regularly
+7. **Use Firewall** to restrict access
 
-### Database Tables
+---
 
-- **users** - User accounts and profiles
-- **expenses** - Expense records
-- **expense_splits** - Expense splitting
-- **groups** - Expense groups
-- **user_groups** - Group memberships
-- **categories** - Expense categories
-- **payment_methods** - Payment methods
-- **transactions** - Financial transactions
-- **notifications** - User notifications
-- **user_settings** - User preferences
-- **plans** - User plans
-- **chit_funds** - Chit fund records
-
-### Default Data
-
-- **Categories**: Food, Transportation, Entertainment, Shopping, etc.
-- **Payment Methods**: Cash, Credit Card, Debit Card, UPI, etc.
-- **User Settings**: Default preferences for new users
-
-### API Endpoints
-
-- **Authentication**: Register, Login, Profile, Password Reset
-- **Expenses**: CRUD operations, splitting, balances
-- **Groups**: Group management and memberships
-- **Categories**: Category management
-- **Payment Methods**: Payment method management
-- **Notifications**: Email and in-app notifications
-- **User Settings**: User preferences
-- **Transactions**: Financial transaction management
-
-## 🔐 Security Notes
-
-1. **Environment Variables**: Never commit `.env` files to version control
-2. **JWT Secret**: Use a strong, unique secret in production
-3. **Database Passwords**: Use strong passwords for production databases
-4. **Email Credentials**: Use app-specific passwords for Gmail
-5. **Google OAuth**: Configure proper redirect URIs for production
-
-## 📝 Next Steps
+## Next Steps
 
 After successful setup:
 
-1. Test all API endpoints using Swagger documentation
-2. Create a test user account
-3. Test expense creation and splitting
-4. Verify email notifications work
-5. Test Google OAuth integration
-6. Set up monitoring and logging for production
+1. **Test API Endpoints** using the Swagger documentation
+2. **Create Test Users** and verify authentication
+3. **Test Notifications** by creating expenses
+4. **Monitor Performance** and logs
+5. **Set up Monitoring** (optional)
+6. **Configure Backup** strategy (optional)
+
+---
+
+For additional support, check the main README.md or create an issue in the repository.
