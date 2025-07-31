@@ -61,6 +61,22 @@ check_pm2() {
     fi
 }
 
+check_production_env() {
+    print_status "Checking production environment..."
+    
+    if [ ! -f ".env.production" ] && [ ! -f ".env" ]; then
+        print_error "No environment file found. Please run setup-production-env.sh first."
+        print_status "Run: ./setup-production-env.sh"
+        exit 1
+    fi
+    
+    if [ -f ".env.production" ]; then
+        print_success "Production environment file found: .env.production"
+    else
+        print_warning "Using existing .env file for production"
+    fi
+}
+
 install_dependencies() {
     print_status "Installing dependencies..."
 
@@ -111,6 +127,12 @@ build_production() {
     print_status "Building production application..."
     check_node
 
+    # Setup production environment for build
+    if [ -f ".env.production" ] && [ ! -f ".env" ]; then
+        print_status "Setting up production environment for build..."
+        cp .env.production .env
+    fi
+
     # Install dependencies first
     install_dependencies
 
@@ -124,6 +146,20 @@ deploy_production() {
     print_status "Deploying to production..."
     check_node
     check_pm2
+    check_production_env
+
+    # Setup production environment
+    print_status "Setting up production environment..."
+    if [ -f ".env.production" ]; then
+        cp .env.production .env
+        print_success "Production environment file copied"
+    else
+        print_warning "No .env.production file found. Using existing .env file."
+        if [ ! -f ".env" ]; then
+            print_error "No .env file found. Please run setup-production-env.sh first."
+            exit 1
+        fi
+    fi
 
     # Build the application
     build_production
