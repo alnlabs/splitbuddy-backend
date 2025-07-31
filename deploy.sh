@@ -111,11 +111,13 @@ start_local() {
     print_status "Waiting for services to be ready..."
     sleep 10
 
-    # Run migrations
-    run_migrations
+    # Run migrations inside Docker container
+    print_status "Running database migrations..."
+    docker exec splitbuddy_backend npm run migration:run
 
-    # Create default data
-    create_default_data
+    # Create default data inside Docker container
+    print_status "Creating default data..."
+    docker exec splitbuddy_backend npm run create-default-data
 
     print_success "Local development environment started successfully!"
     print_status "Application is running at: http://localhost:5900"
