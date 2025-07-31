@@ -1,0 +1,15 @@
+meta {
+  name: ExpenseController_listByCategory
+  type: http
+  seq: 24
+}
+
+get {
+  url: http:/localhost:5900//api/v1/expense/by-category/:categoryId
+  body: none
+  auth: none
+}
+
+params:path {
+  categoryId: 
+}
