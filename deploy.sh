@@ -189,7 +189,15 @@ deploy_production() {
 
     # Start with Docker Compose
     print_status "Starting production with Docker Compose..."
-    docker-compose -f docker-compose.prod.yml up --build -d
+    if [ "$SKIP_INSTALL" = true ]; then
+        print_status "Building with skip-install flag..."
+        export SKIP_INSTALL=true
+        docker-compose -f docker-compose.prod.yml build --build-arg SKIP_INSTALL=true
+        docker-compose -f docker-compose.prod.yml up -d
+    else
+        export SKIP_INSTALL=false
+        docker-compose -f docker-compose.prod.yml up --build -d
+    fi
 
     # Wait for services to be ready
     print_status "Waiting for services to be ready..."

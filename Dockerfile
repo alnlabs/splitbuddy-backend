@@ -4,11 +4,14 @@ FROM node:20
 # Set working directory
 WORKDIR /app
 
+# Accept build argument for skipping install
+ARG SKIP_INSTALL=false
+
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies with legacy peer deps
-RUN npm install --legacy-peer-deps
+# Install dependencies with legacy peer deps (unless SKIP_INSTALL is true)
+RUN if [ "$SKIP_INSTALL" != "true" ]; then npm install --legacy-peer-deps; fi
 
 # Copy the rest of the application code
 COPY . .
