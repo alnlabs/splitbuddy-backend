@@ -1,6 +1,7 @@
 #!/bin/bash
 # SplitBuddy Backend Deployment Script
-# Supports local and production deployments
+# Supports local development and production deployment on Linux VPS
+# Uses Docker for local development and PM2 for production
 
 set -e
 
@@ -60,6 +61,16 @@ check_pm2() {
     fi
 }
 
+install_dependencies() {
+    print_status "Installing dependencies..."
+
+    # Clean install to ensure consistency
+    rm -rf node_modules package-lock.json
+    npm install
+
+    print_success "Dependencies installed successfully!"
+}
+
 start_local() {
     print_status "Starting local development environment..."
     check_docker
@@ -100,8 +111,8 @@ build_production() {
     print_status "Building production application..."
     check_node
 
-    print_status "Installing dependencies..."
-    npm install
+    # Install dependencies first
+    install_dependencies
 
     print_status "Building application..."
     npm run build
@@ -171,32 +182,35 @@ show_help() {
     echo "Usage: $0 [COMMAND]"
     echo ""
     echo "Commands:"
-    echo "  local-start    Start local development environment with Docker"
-    echo "  local-stop     Stop local development environment"
-    echo "  build          Build production application"
-    echo "  deploy         Deploy to production with PM2"
-    echo "  restart        Restart production application"
-    echo "  status         Show application status"
-    echo "  help           Show this help message"
+    echo "  local-start, local    Start local development environment with Docker"
+    echo "  local-stop, stop      Stop local development environment"
+    echo "  build                 Build production application"
+    echo "  deploy, production, prod  Deploy to production with PM2"
+    echo "  restart               Restart production application"
+    echo "  status                Show application status"
+    echo "  help, --help, -h      Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 local-start    # Start local development"
-    echo "  $0 deploy         # Deploy to production"
-    echo "  $0 status         # Check application status"
+    echo "  $0 local-start        # Start local development"
+    echo "  $0 local              # Start local development (alias)"
+    echo "  $0 deploy             # Deploy to production"
+    echo "  $0 production         # Deploy to production (alias)"
+    echo "  $0 prod               # Deploy to production (alias)"
+    echo "  $0 status             # Check application status"
 }
 
 # Main script logic
 case "${1:-help}" in
-    "local-start")
+    "local-start"|"local")
         start_local
         ;;
-    "local-stop")
+    "local-stop"|"stop")
         stop_local
         ;;
     "build")
         build_production
         ;;
-    "deploy")
+    "deploy"|"production"|"prod")
         deploy_production
         ;;
     "restart")
@@ -205,7 +219,7 @@ case "${1:-help}" in
     "status")
         show_status
         ;;
-    "help"|*)
+    "help"|"--help"|"-h"|*)
         show_help
         ;;
 esac
