@@ -167,17 +167,54 @@ deploy_production() {
     check_docker
     check_production_env
 
-    # Setup production environment
-    print_status "Setting up production environment..."
+    # Setup production environment for local Docker deployment
+    print_status "Setting up local production environment..."
     if [ -f ".env.production" ]; then
         cp .env.production .env
         print_success "Production environment file copied"
     else
-        print_warning "No .env.production file found. Using existing .env file."
-        if [ ! -f ".env" ]; then
-            print_error "No .env file found. Please run setup-production-env.sh first."
-            exit 1
-        fi
+        # Create local environment for Docker deployment
+        print_status "Creating local environment for Docker deployment..."
+        cat > .env << EOF
+# SplitBuddy Backend Local Production Environment
+# Using Docker Compose for local deployment
+
+# ========================================
+# DATABASE CONFIGURATION (Local Docker)
+# ========================================
+DB_HOST=postgres
+DB_PORT=5432
+DB_USERNAME=splitbuddy_user_prod
+DB_PASSWORD=SplitBuddy2024!Secure
+DB_DATABASE=splitbuddy_prod
+
+# ========================================
+# REDIS CONFIGURATION (Local Docker)
+# ========================================
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+# ========================================
+# JWT CONFIGURATION
+# ========================================
+JWT_SECRET=iv570SrW+9fhKVvRrgW2cjiPXg7e+vR9dJ5xbJ1W4Ww=
+
+# ========================================
+# SMTP CONFIGURATION
+# ========================================
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=alnlabs1@gmail.com
+SMTP_PASS=mszo jwpz srgu uhwh
+SMTP_FROM=alnlabs1@gmail.com
+
+# ========================================
+# APP CONFIGURATION
+# ========================================
+APP_PORT=5900
+NODE_ENV=production
+EOF
+        print_success "Local environment file created"
     fi
 
     # Build the application
