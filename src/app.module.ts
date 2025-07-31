@@ -17,38 +17,46 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { env } from './config/env.config';
 
-@Module({
-  imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: env.database.host,
-      port: env.database.port,
-      username: env.database.username,
-      password: env.database.password,
-      database: env.database.database,
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: env.app.nodeEnv !== 'production',
-      logging: env.app.nodeEnv === 'development',
-    }),
+const imports = [
+  TypeOrmModule.forRoot({
+    type: 'postgres',
+    host: env.database.host,
+    port: env.database.port,
+    username: env.database.username,
+    password: env.database.password,
+    database: env.database.database,
+    entities: [__dirname + '/**/*.entity{.ts,.js}'],
+    synchronize: env.app.nodeEnv !== 'production',
+    logging: env.app.nodeEnv === 'development',
+  }),
+  AuthModule,
+  CategoryModule,
+  ExpenseModule,
+  NotificationModule,
+  PaymentMethodModule,
+  GroupModule,
+  GroupMemberModule,
+  UserSettingsModule,
+  TransactionModule,
+  DefaultDataModule,
+  UserModule,
+  PlansModule,
+];
+
+// Only add BullModule if Redis is configured
+if (env.redis.host && env.redis.port) {
+  imports.push(
     BullModule.forRoot({
       redis: {
         host: env.redis.host,
         port: env.redis.port,
       },
-    }),
-    AuthModule,
-    CategoryModule,
-    ExpenseModule,
-    NotificationModule,
-    PaymentMethodModule,
-    GroupModule,
-    GroupMemberModule,
-    UserSettingsModule,
-    TransactionModule,
-    DefaultDataModule,
-    UserModule,
-    PlansModule,
-  ],
+    })
+  );
+}
+
+@Module({
+  imports,
   controllers: [AppController],
   providers: [AppService],
 })

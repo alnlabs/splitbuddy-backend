@@ -290,7 +290,16 @@ EOF
 
     # Wait for services to be ready
     print_status "Waiting for services to be ready..."
-    sleep 15
+    sleep 30
+
+    # Check if containers are running
+    print_status "Checking container status..."
+    if ! docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
+        print_error "Containers are not running properly"
+        print_status "Container logs:"
+        docker-compose -f docker-compose.prod.yml logs
+        exit 1
+    fi
 
     # Run migrations inside Docker container
     print_status "Running database migrations..."

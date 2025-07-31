@@ -8,12 +8,16 @@ import { env } from '../config/env.config';
 
 @Injectable()
 export class NotificationService {
+  private readonly hasRedis: boolean;
+
   constructor(
     @InjectQueue('email') private readonly emailQueue: Queue,
     @InjectQueue('notification') private readonly notificationQueue: Queue,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
-  ) {}
+  ) {
+    this.hasRedis = env.redis.host && env.redis.port;
+  }
 
   async sendEmail(
     to: string,
@@ -21,26 +25,41 @@ export class NotificationService {
     text: string,
     html?: string,
   ): Promise<void> {
-    await this.emailQueue.add('send-email', {
-      to,
-      subject,
-      text,
-      html,
-      smtp: {
-        host: env.smtp.host,
-        port: env.smtp.port,
-        user: env.smtp.user,
-        pass: env.smtp.pass,
-        from: env.smtp.from,
-      },
-    });
+    if (this.hasRedis) {
+      await this.emailQueue.add('send-email', {
+        to,
+        subject,
+        text,
+        html,
+        smtp: {
+          host: env.smtp.host,
+          port: env.smtp.port,
+          user: env.smtp.user,
+          pass: env.smtp.pass,
+          from: env.smtp.from,
+        },
+      });
+    } else {
+      // Fallback: log the email instead of queuing
+      console.log(`[EMAIL] To: ${to}, Subject: ${subject}, Text: ${text}`);
+    }
   }
 
   async sendInApp(userId: string, message: string): Promise<void> {
-    await this.notificationQueue.add('send-notification', {
-      userId,
-      message,
-    });
+    if (this.hasRedis) {
+      await this.notificationQueue.add('send-notification', {
+        userId,
+        message,
+      });
+    } else {
+      // Fallback: save directly to database
+      await this.notificationRepo.save({
+        recipient: userId,
+        type: 'in-app',
+        content: message,
+        status: 'SENT',
+      });
+    }
   }
 
   async listNotifications(recipient?: string, type?: string) {
