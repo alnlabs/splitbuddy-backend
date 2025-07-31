@@ -54,22 +54,15 @@ check_node() {
     fi
 }
 
-check_pm2() {
-    if ! command -v pm2 &> /dev/null; then
-        print_warning "PM2 is not installed. Installing PM2..."
-        npm install -g pm2
-    fi
-}
-
 check_production_env() {
     print_status "Checking production environment..."
-    
+
     if [ ! -f ".env.production" ] && [ ! -f ".env" ]; then
         print_error "No environment file found. Please run setup-production-env.sh first."
         print_status "Run: ./setup-production-env.sh"
         exit 1
     fi
-    
+
     if [ -f ".env.production" ]; then
         print_success "Production environment file found: .env.production"
     else
@@ -145,7 +138,7 @@ build_production() {
 deploy_production() {
     print_status "Deploying to production..."
     check_node
-    check_pm2
+    check_docker
     check_production_env
 
     # Setup production environment
@@ -164,31 +157,37 @@ deploy_production() {
     # Build the application
     build_production
 
-    # Run migrations
+    # Stop existing containers
+    print_status "Stopping existing containers..."
+    docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
+
+    # Start with Docker Compose
+    print_status "Starting production with Docker Compose..."
+    docker-compose -f docker-compose.prod.yml up --build -d
+
+    # Wait for services to be ready
+    print_status "Waiting for services to be ready..."
+    sleep 15
+
+    # Run migrations inside Docker container
     print_status "Running database migrations..."
-    npm run migration:run
+    docker-compose -f docker-compose.prod.yml exec app npm run migration:run
 
-    # Create default data
+    # Create default data inside Docker container
     print_status "Creating default data..."
-    npm run create-default-data
-
-    # Start with PM2
-    print_status "Starting application with PM2..."
-    pm2 delete splitbuddy-backend 2>/dev/null || true
-    pm2 start dist/main.js --name splitbuddy-backend --time
-    pm2 save
+    docker-compose -f docker-compose.prod.yml exec app npm run create-default-data
 
     print_success "Production deployment completed!"
-    print_status "Application is running with PM2"
-    print_status "Check status: pm2 status"
-    print_status "View logs: pm2 logs splitbuddy-backend"
+    print_status "Application is running with Docker Compose"
+    print_status "Check status: docker-compose -f docker-compose.prod.yml ps"
+    print_status "View logs: docker-compose -f docker-compose.prod.yml logs -f"
 }
 
 restart_production() {
     print_status "Restarting production application..."
-    check_pm2
+    check_docker
 
-    pm2 restart splitbuddy-backend
+    docker-compose -f docker-compose.prod.yml restart
     print_success "Production application restarted!"
 }
 
@@ -203,12 +202,12 @@ show_status() {
         print_warning "Local containers are not running"
     fi
 
-    # Check if PM2 process is running (production)
-    if pm2 list | grep -q splitbuddy-backend; then
-        print_success "Production application is running with PM2"
-        pm2 status
+    # Check if production containers are running
+    if docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
+        print_success "Production containers are running"
+        docker-compose -f docker-compose.prod.yml ps
     else
-        print_warning "Production application is not running with PM2"
+        print_warning "Production containers are not running"
     fi
 }
 
@@ -221,7 +220,7 @@ show_help() {
     echo "  local-start, local    Start local development environment with Docker"
     echo "  local-stop, stop      Stop local development environment"
     echo "  build                 Build production application"
-    echo "  deploy, production, prod  Deploy to production with PM2"
+    echo "  deploy, production, prod  Deploy to production with Docker Compose"
     echo "  restart               Restart production application"
     echo "  status                Show application status"
     echo "  help, --help, -h      Show this help message"
