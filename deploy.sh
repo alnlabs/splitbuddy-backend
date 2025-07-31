@@ -7,12 +7,17 @@ set -e
 
 # Parse command line arguments
 SKIP_INSTALL=false
+USE_GITHUB_ENV=false
 COMMAND=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --skip-install|-s)
             SKIP_INSTALL=true
+            shift
+            ;;
+        --github|-g)
+            USE_GITHUB_ENV=true
             shift
             ;;
         --help|-h)
@@ -77,17 +82,45 @@ check_node() {
 
 check_production_env() {
     print_status "Checking production environment..."
-
+    
     if [ ! -f ".env.production" ] && [ ! -f ".env" ]; then
         print_error "No environment file found. Please run setup-production-env.sh first."
         print_status "Run: ./setup-production-env.sh"
         exit 1
     fi
-
+    
     if [ -f ".env.production" ]; then
         print_success "Production environment file found: .env.production"
     else
         print_warning "Using existing .env file for production"
+    fi
+}
+
+fetch_env_from_github() {
+    print_status "Fetching environment variables from GitHub..."
+    
+    # Check if GitHub token is available
+    if [ -z "$GITHUB_TOKEN" ]; then
+        print_error "GITHUB_TOKEN environment variable is required for fetching secrets"
+        print_status "Set GITHUB_TOKEN with your GitHub personal access token"
+        exit 1
+    fi
+    
+    # Fetch environment variables from GitHub repository secrets
+    # This requires GitHub Actions or a script to fetch secrets
+    if command -v gh &> /dev/null; then
+        print_status "Using GitHub CLI to fetch secrets..."
+        # Fetch secrets from GitHub repository
+        gh secret list --repo "$GITHUB_REPO" --json name,value | jq -r '.[] | "\(.name)=\(.value)"' > .env.production
+        print_success "Environment variables fetched from GitHub secrets"
+    else
+        print_warning "GitHub CLI not found. Using fallback method..."
+        # Alternative: Fetch from a private repository file
+        curl -H "Authorization: token $GITHUB_TOKEN" \
+             -H "Accept: application/vnd.github.v3.raw" \
+             "https://api.github.com/repos/$GITHUB_REPO/contents/.env.production" \
+             | jq -r '.content' | base64 -d > .env.production
+        print_success "Environment variables fetched from GitHub repository"
     fi
 }
 
@@ -169,7 +202,9 @@ deploy_production() {
 
     # Setup production environment for local Docker deployment
     print_status "Setting up local production environment..."
-    if [ -f ".env.production" ]; then
+    if [ "$USE_GITHUB_ENV" = true ]; then
+        fetch_env_from_github
+    elif [ -f ".env.production" ]; then
         cp .env.production .env
         print_success "Production environment file copied"
     else
@@ -298,6 +333,7 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  --skip-install, -s    Skip dependency installation (use existing node_modules)"
+    echo "  --github, -g          Fetch environment variables from GitHub secrets"
     echo ""
     echo "Examples:"
     echo "  $0 local-start        # Start local development"
@@ -307,6 +343,8 @@ show_help() {
     echo "  $0 prod               # Deploy to production (alias)"
     echo "  $0 deploy --skip-install  # Deploy without reinstalling dependencies"
     echo "  $0 deploy -s          # Deploy without reinstalling dependencies (short)"
+    echo "  $0 deploy --github    # Deploy with environment from GitHub secrets"
+    echo "  $0 deploy -g          # Deploy with environment from GitHub (short)"
     echo "  $0 status             # Check application status"
 }
 
