@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -147,12 +151,15 @@ export class AuthService {
       const token = this.jwtService.sign(jwtPayload);
 
       return {
-        access_token: token,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
+        success: true,
+        data: {
+          access_token: token,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+          },
         },
       };
     } catch (error) {
@@ -172,7 +179,10 @@ export class AuthService {
     return user;
   }
 
-  async updateProfile(userId: string, updateData: Partial<User>): Promise<User> {
+  async updateProfile(
+    userId: string,
+    updateData: Partial<User>,
+  ): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -185,7 +195,11 @@ export class AuthService {
     return await this.userRepository.save(user);
   }
 
-  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<void> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -214,7 +228,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(
       { email, sub: user.id },
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     const resetLink = `${env.app.corsOrigin || 'http://localhost:5900'}/api/v1/auth/reset-password?token=${token}`;
@@ -222,7 +236,7 @@ export class AuthService {
     await this.notificationService.sendEmail(
       email,
       'Password Reset Request',
-      `Click the following link to reset your password: ${resetLink}`
+      `Click the following link to reset your password: ${resetLink}`,
     );
   }
 
@@ -255,7 +269,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(
       { email, sub: user.id },
-      { expiresIn: '24h' }
+      { expiresIn: '24h' },
     );
 
     const verifyLink = `${env.app.corsOrigin || 'http://localhost:5900'}/api/v1/auth/verify-email?token=${token}`;
@@ -263,7 +277,7 @@ export class AuthService {
     await this.notificationService.sendEmail(
       email,
       'Email Verification',
-      `Click the following link to verify your email: ${verifyLink}`
+      `Click the following link to verify your email: ${verifyLink}`,
     );
   }
 
@@ -283,5 +297,24 @@ export class AuthService {
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');
     }
+  }
+
+  async logout(userId: string): Promise<{ message: string }> {
+    // In a real application, you might want to:
+    // 1. Add the token to a blacklist
+    // 2. Update user's last logout time
+    // 3. Clear any server-side sessions
+
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // For now, just return success message
+    // The client will handle clearing the token
+    return { message: 'Logout successful' };
   }
 }

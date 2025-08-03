@@ -232,4 +232,14 @@ export class AuthController {
   async googleVerify(@Body() dto: GoogleAuthDto) {
     return this.authService.googleVerify(dto.idToken);
   }
+
+  @Post('logout')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async logout(@Request() req: UserRequest) {
+    return this.authService.logout(req.user.userId);
+  }
 }
