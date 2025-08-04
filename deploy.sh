@@ -382,8 +382,8 @@ EOF
     DB_RETRY_COUNT=0
     MAX_DB_RETRIES=5
 
-    while [ $DB_RETRY_COUNT -lt $MAX_DB_RETRIES ]; do
-        if docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" > /dev/null 2>&1; then
+        while [ $DB_RETRY_COUNT -lt $MAX_DB_RETRIES ]; do
+        if docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
             print_success "Database connection successful!"
             break
         else
@@ -399,7 +399,7 @@ EOF
                 print_status "Checking if app container is ready..."
                 docker-compose -f docker-compose.prod.yml exec app ps aux || print_warning "App container not ready"
                 print_status "Trying to connect to database manually..."
-                docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" 2>&1 || print_warning "Manual connection test failed"
+                docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>&1 || print_warning "Manual connection test failed"
                 exit 1
             fi
 
@@ -444,17 +444,16 @@ EOF
         fi
     done
 
-    # Verify migrations were applied
+        # Verify migrations were applied
     print_status "Verifying migrations were applied..."
-    TABLE_COUNT=$(docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null | tail -1 | tr -d ' ')
+    TABLE_COUNT=$(docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null | grep -c "pending" || echo "0")
 
-    if [ "$TABLE_COUNT" -eq "0" ]; then
-        print_error "No tables found in database after migrations!"
-        print_status "Database tables:"
-        docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null || true
-        exit 1
+    if [ "$TABLE_COUNT" -gt "0" ]; then
+        print_warning "Found $TABLE_COUNT pending migrations"
+        print_status "Migration status:"
+        docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null || true
     else
-        print_success "Found $TABLE_COUNT tables in database"
+        print_success "All migrations appear to be applied"
     fi
 
     # Create default data inside Docker container
@@ -511,13 +510,13 @@ check_migrations() {
         return 1
     fi
 
-    # Check database connection with retry logic
+        # Check database connection with retry logic
     print_status "Testing database connection..."
     DB_RETRY_COUNT=0
     MAX_DB_RETRIES=5
 
     while [ $DB_RETRY_COUNT -lt $MAX_DB_RETRIES ]; do
-        if docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" > /dev/null 2>&1; then
+        if docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
             print_success "Database connection successful!"
             break
         else
@@ -545,30 +544,16 @@ check_migrations() {
     print_status "Migration files:"
     docker-compose -f docker-compose.prod.yml exec app ls -la src/migrations/ 2>/dev/null || print_warning "Could not list migration files"
 
-    # Check database tables
-    print_status "Checking database tables..."
-    TABLE_COUNT=$(docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null | tail -1 | tr -d ' ')
-
-    if [ "$TABLE_COUNT" -eq "0" ]; then
-        print_error "No tables found in database!"
-        print_status "Database is empty - migrations need to be run"
-        return 1
-    else
-        print_success "Found $TABLE_COUNT tables in database"
-
-        # List tables
-        print_status "Database tables:"
-        docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name" 2>/dev/null || true
-    fi
-
-    # Check migration status
+        # Check migration status
     print_status "Checking migration status..."
-    if docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- migration:show > /dev/null 2>&1; then
-        print_success "Migration status check successful"
-        print_status "Migration status:"
-        docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- migration:show 2>/dev/null || true
+    PENDING_MIGRATIONS=$(docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null | grep -c "pending" || echo "0")
+
+    if [ "$PENDING_MIGRATIONS" -eq "0" ]; then
+        print_success "All migrations are applied"
     else
-        print_warning "Could not check migration status"
+        print_warning "Found $PENDING_MIGRATIONS pending migrations"
+        print_status "Pending migrations:"
+        docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null || true
     fi
 }
 

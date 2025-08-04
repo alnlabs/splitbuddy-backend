@@ -25,7 +25,7 @@ docker-compose -f docker-compose.prod.yml logs app | tail -10
 
 echo ""
 echo "📋 6. Testing database connection manually..."
-docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" 2>&1
+docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>&1
 
 echo ""
 echo "✅ Debug completed!"
