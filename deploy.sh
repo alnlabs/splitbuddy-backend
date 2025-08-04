@@ -398,32 +398,42 @@ EOF
     # Check database connection with retry logic
     print_status "Checking database connection..."
     DB_RETRY_COUNT=0
-    MAX_DB_RETRIES=5
+    MAX_DB_RETRIES=10
 
-        while [ $DB_RETRY_COUNT -lt $MAX_DB_RETRIES ]; do
-        if docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
-            print_success "Database connection successful!"
-            break
-        else
-            DB_RETRY_COUNT=$((DB_RETRY_COUNT + 1))
-            print_warning "Database connection failed (attempt $DB_RETRY_COUNT/$MAX_DB_RETRIES)"
-
-            if [ $DB_RETRY_COUNT -eq $MAX_DB_RETRIES ]; then
-                print_error "Database connection failed after $MAX_DB_RETRIES attempts"
-                print_status "Database logs:"
-                docker-compose -f docker-compose.prod.yml logs postgres
-                print_status "App logs:"
-                docker-compose -f docker-compose.prod.yml logs app | tail -20
-                print_status "Checking if app container is ready..."
-                docker-compose -f docker-compose.prod.yml exec app ps aux || print_warning "App container not ready"
-                print_status "Trying to connect to database manually..."
-                docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>&1 || print_warning "Manual connection test failed"
-                exit 1
+    while [ $DB_RETRY_COUNT -lt $MAX_DB_RETRIES ]; do
+        # First check if postgres container is ready
+        print_status "Checking if PostgreSQL container is ready..."
+        if docker-compose -f docker-compose.prod.yml exec postgres pg_isready -U splitbuddy_user_prod > /dev/null 2>&1; then
+            print_success "PostgreSQL container is ready!"
+            
+            # Now test the app's connection to postgres
+            if docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
+                print_success "Database connection successful!"
+                break
+            else
+                print_warning "App cannot connect to database (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
             fi
-
-            print_status "Retrying database connection in 10 seconds..."
-            sleep 10
+        else
+            print_warning "PostgreSQL container not ready (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
         fi
+        
+        DB_RETRY_COUNT=$((DB_RETRY_COUNT + 1))
+
+        if [ $DB_RETRY_COUNT -eq $MAX_DB_RETRIES ]; then
+            print_error "Database connection failed after $MAX_DB_RETRIES attempts"
+            print_status "PostgreSQL logs:"
+            docker-compose -f docker-compose.prod.yml logs postgres | tail -20
+            print_status "App logs:"
+            docker-compose -f docker-compose.prod.yml logs app | tail -20
+            print_status "Network connectivity test:"
+            docker-compose -f docker-compose.prod.yml exec app ping -c 3 postgres || print_warning "Cannot ping postgres"
+            print_status "Port connectivity test:"
+            docker-compose -f docker-compose.prod.yml exec app sh -c "timeout 5 bash -c '</dev/tcp/postgres/5432' && echo 'Port 5432 is reachable' || echo 'Port 5432 is not reachable'" || print_warning "Port test failed"
+            exit 1
+        fi
+
+        print_status "Retrying database connection in 15 seconds..."
+        sleep 15
     done
 
     # Check if migrations exist
