@@ -440,20 +440,29 @@ EOF
             else
                 print_warning "Network connectivity failed (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
 
-                # Restart containers after 3 failed attempts to fix network issues
-                if [ $DB_RETRY_COUNT -eq 3 ]; then
-                    print_status "Restarting containers to fix network connectivity..."
-                    docker-compose -f docker-compose.prod.yml restart
-                    sleep 10
-                fi
+                # Try TCP connectivity as alternative to ping
+                print_status "Testing TCP connectivity to postgres:5432..."
+                if docker-compose -f docker-compose.prod.yml exec app sh -c "timeout 5 bash -c '</dev/tcp/postgres/5432'"; then
+                    print_success "TCP connectivity to postgres:5432 OK"
+                    print_success "Network connectivity OK (TCP working)"
+                else
+                    print_warning "TCP connectivity to postgres:5432 failed"
 
-                # Recreate network after 5 failed attempts
-                if [ $DB_RETRY_COUNT -eq 5 ]; then
-                    print_status "Recreating Docker network to fix connectivity..."
-                    docker-compose -f docker-compose.prod.yml down
-                    docker network prune -f 2>/dev/null || true
-                    docker-compose -f docker-compose.prod.yml up -d
-                    sleep 15
+                    # Restart containers after 3 failed attempts to fix network issues
+                    if [ $DB_RETRY_COUNT -eq 3 ]; then
+                        print_status "Restarting containers to fix network connectivity..."
+                        docker-compose -f docker-compose.prod.yml restart
+                        sleep 10
+                    fi
+
+                    # Recreate network after 5 failed attempts
+                    if [ $DB_RETRY_COUNT -eq 5 ]; then
+                        print_status "Recreating Docker network to fix connectivity..."
+                        docker-compose -f docker-compose.prod.yml down
+                        docker network prune -f 2>/dev/null || true
+                        docker-compose -f docker-compose.prod.yml up -d
+                        sleep 15
+                    fi
                 fi
             fi
         else
