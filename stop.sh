@@ -176,6 +176,18 @@ show_status() {
 # Safe cleanup - removes only unused resources
 cleanup_safe() {
     print_status "Performing safe cleanup (unused resources only)..."
+    
+    # Show what will be deleted
+    print_info "Will delete:"
+    print_info "  - Stopped containers"
+    print_info "  - Unused networks"
+    print_info "  - Dangling images (untagged images)"
+    
+    read -p "Continue with safe cleanup? (y/N): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        print_warning "Safe cleanup cancelled"
+        return
+    fi
 
     # Remove stopped containers
     print_status "Removing stopped containers..."
@@ -195,6 +207,19 @@ cleanup_safe() {
 # Aggressive cleanup - removes more resources including unused images
 cleanup_aggressive() {
     print_status "Performing aggressive cleanup..."
+    
+    # Show what will be deleted
+    print_info "Will delete:"
+    print_info "  - Everything from safe cleanup"
+    print_info "  - ALL unused images (including tagged ones)"
+    print_info "  - Unused build cache"
+    print_warning "This will free significant disk space but may remove images you might need later"
+    
+    read -p "Continue with aggressive cleanup? (y/N): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        print_warning "Aggressive cleanup cancelled"
+        return
+    fi
 
     # Safe cleanup first
     cleanup_safe
@@ -220,6 +245,11 @@ cleanup_nuclear() {
     print_warning "  - All volumes (this will DELETE your data!)"
     print_warning "  - All build cache"
     
+    # Show current resource usage
+    print_info "Current Docker resources:"
+    docker system df --format "table {{.Type}}\t{{.TotalCount}}\t{{.Size}}\t{{.Reclaimable}}"
+    
+    print_warning "⚠️  WARNING: This will DELETE ALL your Docker data including databases!"
     read -p "Are you absolutely sure? Type 'YES' to continue: " confirm
     if [ "$confirm" != "YES" ]; then
         print_error "Nuclear cleanup cancelled"
@@ -303,13 +333,13 @@ show_help() {
     echo "Usage: $0 [COMMAND] [OPTIONS]"
     echo ""
     echo "Commands:"
-    echo "  local, dev           Stop local development environment"
-    echo "  production, prod     Stop production environment"
-    echo "  all                  Stop all environments (local + production)"
-    echo "  status               Show current status of all environments"
-    echo "  cleanup              Clean up Docker resources"
-    echo "  resources            Show detailed Docker resource usage"
-    echo "  help, --help, -h     Show this help message"
+    echo "  local, dev, l        Stop local development environment"
+    echo "  production, prod, p  Stop production environment"
+    echo "  all, a               Stop all environments (local + production)"
+    echo "  status, s            Show current status of all environments"
+    echo "  cleanup, c           Clean up Docker resources"
+    echo "  resources, r         Show detailed Docker resource usage"
+    echo "  help, --help, -h, h  Show this help message"
     echo ""
     echo "Cleanup Levels (--cleanup-level):"
     echo "  safe                 Safe cleanup - removes only unused resources (default)"
@@ -318,13 +348,17 @@ show_help() {
     echo ""
     echo "Examples:"
     echo "  $0 local             # Stop local development environment"
-    echo "  $0 dev               # Stop local development environment (alias)"
+    echo "  $0 l                 # Shortcut for local"
     echo "  $0 production        # Stop production environment"
-    echo "  $0 prod              # Stop production environment (alias)"
+    echo "  $0 p                 # Shortcut for production"
     echo "  $0 all               # Stop all environments"
+    echo "  $0 a                 # Shortcut for all"
     echo "  $0 status            # Check current status"
+    echo "  $0 s                 # Shortcut for status"
     echo "  $0 resources         # Show detailed resource usage"
+    echo "  $0 r                 # Shortcut for resources"
     echo "  $0 cleanup           # Safe cleanup (default)"
+    echo "  $0 c                 # Shortcut for cleanup"
     echo "  $0 cleanup --cleanup-level aggressive  # Aggressive cleanup"
     echo "  $0 cleanup --cleanup-level nuclear     # Nuclear cleanup (dangerous!)"
     echo ""
@@ -333,25 +367,25 @@ show_help() {
 
 # Main script logic
 case "${COMMAND:-help}" in
-    "local"|"dev")
+    "local"|"dev"|"l")
         stop_local
         ;;
-    "production"|"prod")
+    "production"|"prod"|"p")
         stop_production
         ;;
-    "all")
+    "all"|"a")
         stop_all
         ;;
-    "status")
+    "status"|"s")
         show_status
         ;;
-    "cleanup")
+    "cleanup"|"c")
         cleanup
         ;;
-    "resources")
+    "resources"|"r")
         show_resources
         ;;
-    "help"|"--help"|"-h"|*)
+    "help"|"--help"|"-h"|"h"|*)
         show_help
         ;;
 esac
