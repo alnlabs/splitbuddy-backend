@@ -539,7 +539,7 @@ EOF
     MIGRATION_OUTPUT=$(docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null || echo "")
     print_status "Migration check output:"
     echo "$MIGRATION_OUTPUT"
-    
+
     # Check if there are any pending migrations (look for "pending" or count of migrations)
     if echo "$MIGRATION_OUTPUT" | grep -q "No migrations are pending"; then
         print_success "No pending migrations found"
@@ -567,7 +567,7 @@ EOF
                 # Verify migrations were applied
                 print_status "Verifying migrations were applied..."
                 VERIFICATION_OUTPUT=$(docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null || echo "")
-                
+
                 if echo "$VERIFICATION_OUTPUT" | grep -q "No migrations are pending"; then
                     print_success "All migrations verified successfully!"
                     break
@@ -596,7 +596,7 @@ EOF
         # Verify migrations were applied
     print_status "Verifying migrations were applied..."
     FINAL_VERIFICATION_OUTPUT=$(docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null || echo "")
-    
+
     if echo "$FINAL_VERIFICATION_OUTPUT" | grep -q "No migrations are pending"; then
         print_success "All migrations appear to be applied"
     else
