@@ -202,6 +202,17 @@ deploy_production() {
     check_docker
     check_production_env
 
+    # Check if migration files are committed
+    print_status "Checking for uncommitted migration files..."
+    UNCOMMITTED_MIGRATIONS=$(git status --porcelain | grep "src/migrations/" | wc -l)
+    if [ "$UNCOMMITTED_MIGRATIONS" -gt 0 ]; then
+        print_warning "Found uncommitted migration files:"
+        git status --porcelain | grep "src/migrations/"
+        print_status "Please commit and push migration files before deployment"
+        print_status "Run: git add src/migrations/ && git commit -m 'Add migrations' && git push"
+        exit 1
+    fi
+
     # Setup production environment for local Docker deployment
     print_status "Setting up local production environment..."
     if [ "$USE_GITHUB_ENV" = true ]; then
@@ -344,6 +355,13 @@ EOF
     print_status "Waiting for database to be fully ready..."
     sleep 15
 
+    # Ensure migration files are available in the container
+    print_status "Ensuring migration files are available..."
+    docker-compose -f docker-compose.prod.yml exec app ls -la src/migrations/ || {
+        print_warning "Migration directory not accessible, copying files..."
+        docker-compose -f docker-compose.prod.yml cp src/migrations app:/app/src/migrations
+    }
+
     # Check if app container is ready
     print_status "Checking if app container is ready..."
     APP_RETRY_COUNT=0
@@ -419,30 +437,60 @@ EOF
         print_success "Found $MIGRATION_COUNT migration files"
     fi
 
-    # Run migrations inside Docker container with retry logic
-    print_status "Running database migrations..."
-    MIGRATION_RETRY_COUNT=0
-    MAX_MIGRATION_RETRIES=3
+    # Check database connection first
+    print_status "Testing database connection..."
+    if ! docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
+        print_error "Cannot connect to database"
+        print_status "Please ensure database is running and accessible"
+        exit 1
+    fi
 
-    while [ $MIGRATION_RETRY_COUNT -lt $MAX_MIGRATION_RETRIES ]; do
-        if docker-compose -f docker-compose.prod.yml exec app npm run migration:run; then
-            print_success "Database migrations completed successfully!"
-            break
-        else
-            MIGRATION_RETRY_COUNT=$((MIGRATION_RETRY_COUNT + 1))
-            print_warning "Migration failed (attempt $MIGRATION_RETRY_COUNT/$MAX_MIGRATION_RETRIES)"
+    # Show pending migrations
+    print_status "Checking pending migrations..."
+    PENDING_MIGRATIONS=$(docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null | grep -c "pending" || echo "0")
+    print_status "Found $PENDING_MIGRATIONS pending migrations"
 
-            if [ $MIGRATION_RETRY_COUNT -eq $MAX_MIGRATION_RETRIES ]; then
-                print_error "Migrations failed after $MAX_MIGRATION_RETRIES attempts"
-                print_status "Migration logs:"
-                docker-compose -f docker-compose.prod.yml logs app | tail -50
-                exit 1
+    if [ "$PENDING_MIGRATIONS" -eq "0" ]; then
+        print_success "No pending migrations found"
+    else
+        # Run migrations inside Docker container with retry logic
+        print_status "Running database migrations..."
+        MIGRATION_RETRY_COUNT=0
+        MAX_MIGRATION_RETRIES=5
+
+        while [ $MIGRATION_RETRY_COUNT -lt $MAX_MIGRATION_RETRIES ]; do
+            print_status "Running migrations (attempt $((MIGRATION_RETRY_COUNT + 1))/$MAX_MIGRATION_RETRIES)..."
+
+            if docker-compose -f docker-compose.prod.yml exec app npm run migration:run; then
+                print_success "Database migrations completed successfully!"
+
+                # Verify migrations were applied
+                print_status "Verifying migrations were applied..."
+                REMAINING_MIGRATIONS=$(docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null | grep -c "pending" || echo "0")
+
+                if [ "$REMAINING_MIGRATIONS" -eq "0" ]; then
+                    print_success "All migrations verified successfully!"
+                    break
+                else
+                    print_warning "Some migrations may not have been applied properly"
+                    print_status "Remaining migrations: $REMAINING_MIGRATIONS"
+                fi
+            else
+                MIGRATION_RETRY_COUNT=$((MIGRATION_RETRY_COUNT + 1))
+                print_warning "Migration failed (attempt $MIGRATION_RETRY_COUNT/$MAX_MIGRATION_RETRIES)"
+
+                if [ $MIGRATION_RETRY_COUNT -eq $MAX_MIGRATION_RETRIES ]; then
+                    print_error "Migrations failed after $MAX_MIGRATION_RETRIES attempts"
+                    print_status "Migration logs:"
+                    docker-compose -f docker-compose.prod.yml logs app | tail -50
+                    exit 1
+                fi
+
+                print_status "Retrying migration in 15 seconds..."
+                sleep 15
             fi
-
-            print_status "Retrying migration in 10 seconds..."
-            sleep 10
-        fi
-    done
+        done
+    fi
 
         # Verify migrations were applied
     print_status "Verifying migrations were applied..."
@@ -567,14 +615,45 @@ run_migrations() {
         return 1
     fi
 
+    # Check database connection first
+    print_status "Testing database connection..."
+    if ! docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
+        print_error "Cannot connect to database"
+        print_status "Please ensure database is running and accessible"
+        return 1
+    fi
+
+    # Show pending migrations
+    print_status "Checking pending migrations..."
+    PENDING_MIGRATIONS=$(docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null | grep -c "pending" || echo "0")
+    print_status "Found $PENDING_MIGRATIONS pending migrations"
+
+    if [ "$PENDING_MIGRATIONS" -eq "0" ]; then
+        print_success "No pending migrations found"
+        return 0
+    fi
+
     # Run migrations with retry logic
     MIGRATION_RETRY_COUNT=0
-    MAX_MIGRATION_RETRIES=3
+    MAX_MIGRATION_RETRIES=5
 
     while [ $MIGRATION_RETRY_COUNT -lt $MAX_MIGRATION_RETRIES ]; do
+        print_status "Running migrations (attempt $((MIGRATION_RETRY_COUNT + 1))/$MAX_MIGRATION_RETRIES)..."
+
         if docker-compose -f docker-compose.prod.yml exec app npm run migration:run; then
             print_success "Database migrations completed successfully!"
-            return 0
+
+            # Verify migrations were applied
+            print_status "Verifying migrations were applied..."
+            REMAINING_MIGRATIONS=$(docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run 2>/dev/null | grep -c "pending" || echo "0")
+
+            if [ "$REMAINING_MIGRATIONS" -eq "0" ]; then
+                print_success "All migrations verified successfully!"
+                return 0
+            else
+                print_warning "Some migrations may not have been applied properly"
+                print_status "Remaining migrations: $REMAINING_MIGRATIONS"
+            fi
         else
             MIGRATION_RETRY_COUNT=$((MIGRATION_RETRY_COUNT + 1))
             print_warning "Migration failed (attempt $MIGRATION_RETRY_COUNT/$MAX_MIGRATION_RETRIES)"
@@ -586,8 +665,8 @@ run_migrations() {
                 return 1
             fi
 
-            print_status "Retrying migration in 10 seconds..."
-            sleep 10
+            print_status "Retrying migration in 15 seconds..."
+            sleep 15
         fi
     done
 }
