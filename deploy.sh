@@ -405,17 +405,17 @@ EOF
         print_status "Checking if PostgreSQL container is ready..."
         if docker-compose -f docker-compose.prod.yml exec postgres pg_isready -U splitbuddy_user_prod > /dev/null 2>&1; then
             print_success "PostgreSQL container is ready!"
-            
+
             # Test network connectivity from app to postgres
             print_status "Testing network connectivity..."
             if docker-compose -f docker-compose.prod.yml exec app ping -c 3 postgres > /dev/null 2>&1; then
                 print_success "Network connectivity OK"
-                
+
                 # Test port connectivity
                 print_status "Testing port connectivity..."
                 if docker-compose -f docker-compose.prod.yml exec app sh -c "timeout 5 bash -c '</dev/tcp/postgres/5432' && echo 'Port 5432 is reachable' || echo 'Port 5432 is not reachable'" 2>/dev/null | grep -q "Port 5432 is reachable"; then
                     print_success "Port 5432 is reachable"
-                    
+
                     # Now test the app's connection to postgres
                     if docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
                         print_success "Database connection successful!"
