@@ -317,26 +317,101 @@ EOF
         docker-compose -f docker-compose.prod.yml up --build -d
     fi
 
-    # Wait for services to be ready
+    # Wait for services to be ready with retry logic
     print_status "Waiting for services to be ready..."
-    sleep 30
+    MAX_RETRIES=10
+    RETRY_COUNT=0
 
-    # Check if containers are running
-    print_status "Checking container status..."
-    if ! docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
-        print_error "Containers are not running properly"
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        if docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
+            print_success "All containers are running!"
+            break
+        else
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            print_warning "Waiting for containers... (attempt $RETRY_COUNT/$MAX_RETRIES)"
+            sleep 10
+        fi
+    done
+
+    if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+        print_error "Containers failed to start after $MAX_RETRIES attempts"
         print_status "Container logs:"
         docker-compose -f docker-compose.prod.yml logs
         exit 1
     fi
 
-    # Run migrations inside Docker container
+    # Wait additional time for database to be fully ready
+    print_status "Waiting for database to be fully ready..."
+    sleep 15
+
+    # Check database connection
+    print_status "Checking database connection..."
+    if ! docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" > /dev/null 2>&1; then
+        print_error "Database connection failed"
+        print_status "Database logs:"
+        docker-compose -f docker-compose.prod.yml logs postgres
+        exit 1
+    fi
+    print_success "Database connection successful"
+
+    # Check if migrations exist
+    print_status "Checking for migration files..."
+    MIGRATION_COUNT=$(docker-compose -f docker-compose.prod.yml exec app find src/migrations -name "*.ts" | wc -l)
+    if [ "$MIGRATION_COUNT" -eq 0 ]; then
+        print_warning "No migration files found in src/migrations/"
+        print_status "Available files in migrations directory:"
+        docker-compose -f docker-compose.prod.yml exec app ls -la src/migrations/ || true
+    else
+        print_success "Found $MIGRATION_COUNT migration files"
+    fi
+
+    # Run migrations inside Docker container with retry logic
     print_status "Running database migrations..."
-    docker-compose -f docker-compose.prod.yml exec app npm run migration:run
+    MIGRATION_RETRY_COUNT=0
+    MAX_MIGRATION_RETRIES=3
+
+    while [ $MIGRATION_RETRY_COUNT -lt $MAX_MIGRATION_RETRIES ]; do
+        if docker-compose -f docker-compose.prod.yml exec app npm run migration:run; then
+            print_success "Database migrations completed successfully!"
+            break
+        else
+            MIGRATION_RETRY_COUNT=$((MIGRATION_RETRY_COUNT + 1))
+            print_warning "Migration failed (attempt $MIGRATION_RETRY_COUNT/$MAX_MIGRATION_RETRIES)"
+
+            if [ $MIGRATION_RETRY_COUNT -eq $MAX_MIGRATION_RETRIES ]; then
+                print_error "Migrations failed after $MAX_MIGRATION_RETRIES attempts"
+                print_status "Migration logs:"
+                docker-compose -f docker-compose.prod.yml logs app | tail -50
+                exit 1
+            fi
+
+            print_status "Retrying migration in 10 seconds..."
+            sleep 10
+        fi
+    done
+
+    # Verify migrations were applied
+    print_status "Verifying migrations were applied..."
+    TABLE_COUNT=$(docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null | tail -1 | tr -d ' ')
+
+    if [ "$TABLE_COUNT" -eq "0" ]; then
+        print_error "No tables found in database after migrations!"
+        print_status "Database tables:"
+        docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null || true
+        exit 1
+    else
+        print_success "Found $TABLE_COUNT tables in database"
+    fi
 
     # Create default data inside Docker container
     print_status "Creating default data..."
-    docker-compose -f docker-compose.prod.yml exec app npm run create-default-data
+    if docker-compose -f docker-compose.prod.yml exec app npm run create-default-data; then
+        print_success "Default data created successfully!"
+    else
+        print_warning "Default data creation failed (this is not critical)"
+        print_status "Default data logs:"
+        docker-compose -f docker-compose.prod.yml logs app | tail -20
+    fi
 
     print_success "Production deployment completed!"
     print_status "Application is running with Docker Compose"
@@ -372,6 +447,95 @@ show_status() {
     fi
 }
 
+check_migrations() {
+    print_status "Checking migration status..."
+
+    # Check if containers are running
+    if ! docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
+        print_error "Production containers are not running"
+        print_status "Start containers first: $0 production"
+        return 1
+    fi
+
+    # Check database connection
+    print_status "Testing database connection..."
+    if ! docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" > /dev/null 2>&1; then
+        print_error "Database connection failed"
+        return 1
+    fi
+    print_success "Database connection successful"
+
+    # Check migration files
+    print_status "Checking migration files..."
+    MIGRATION_FILES=$(docker-compose -f docker-compose.prod.yml exec app find src/migrations -name "*.ts" 2>/dev/null | wc -l)
+    print_status "Found $MIGRATION_FILES migration files"
+
+    # List migration files
+    print_status "Migration files:"
+    docker-compose -f docker-compose.prod.yml exec app ls -la src/migrations/ 2>/dev/null || print_warning "Could not list migration files"
+
+    # Check database tables
+    print_status "Checking database tables..."
+    TABLE_COUNT=$(docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null | tail -1 | tr -d ' ')
+
+    if [ "$TABLE_COUNT" -eq "0" ]; then
+        print_error "No tables found in database!"
+        print_status "Database is empty - migrations need to be run"
+        return 1
+    else
+        print_success "Found $TABLE_COUNT tables in database"
+
+        # List tables
+        print_status "Database tables:"
+        docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name" 2>/dev/null || true
+    fi
+
+    # Check migration status
+    print_status "Checking migration status..."
+    if docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- migration:show > /dev/null 2>&1; then
+        print_success "Migration status check successful"
+        print_status "Migration status:"
+        docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- migration:show 2>/dev/null || true
+    else
+        print_warning "Could not check migration status"
+    fi
+}
+
+run_migrations() {
+    print_status "Running database migrations..."
+
+    # Check if containers are running
+    if ! docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
+        print_error "Production containers are not running"
+        print_status "Start containers first: $0 production"
+        return 1
+    fi
+
+    # Run migrations with retry logic
+    MIGRATION_RETRY_COUNT=0
+    MAX_MIGRATION_RETRIES=3
+
+    while [ $MIGRATION_RETRY_COUNT -lt $MAX_MIGRATION_RETRIES ]; do
+        if docker-compose -f docker-compose.prod.yml exec app npm run migration:run; then
+            print_success "Database migrations completed successfully!"
+            return 0
+        else
+            MIGRATION_RETRY_COUNT=$((MIGRATION_RETRY_COUNT + 1))
+            print_warning "Migration failed (attempt $MIGRATION_RETRY_COUNT/$MAX_MIGRATION_RETRIES)"
+
+            if [ $MIGRATION_RETRY_COUNT -eq $MAX_MIGRATION_RETRIES ]; then
+                print_error "Migrations failed after $MAX_MIGRATION_RETRIES attempts"
+                print_status "Migration logs:"
+                docker-compose -f docker-compose.prod.yml logs app | tail -50
+                return 1
+            fi
+
+            print_status "Retrying migration in 10 seconds..."
+            sleep 10
+        fi
+    done
+}
+
 show_help() {
     echo "SplitBuddy Backend Deployment Script"
     echo ""
@@ -384,6 +548,8 @@ show_help() {
     echo "  deploy, production, prod  Deploy to production with Docker Compose"
     echo "  restart               Restart production application"
     echo "  status                Show application status"
+    echo "  check-migrations      Check database migration status"
+    echo "  run-migrations        Run database migrations manually"
     echo "  help, --help, -h      Show this help message"
     echo ""
     echo "Options:"
@@ -401,6 +567,8 @@ show_help() {
     echo "  $0 deploy --github    # Deploy with environment from GitHub secrets"
     echo "  $0 deploy -g          # Deploy with environment from GitHub (short)"
     echo "  $0 status             # Check application status"
+    echo "  $0 check-migrations   # Check migration status"
+    echo "  $0 run-migrations     # Run migrations manually"
 }
 
 # Main script logic
@@ -423,7 +591,18 @@ case "${COMMAND:-help}" in
     "status")
         show_status
         ;;
-    "help"|"--help"|"-h"|*)
+    "check-migrations")
+        check_migrations
+        ;;
+    "run-migrations")
+        run_migrations
+        ;;
+    "help"|"--help"|"-h"|"")
         show_help
+        ;;
+    *)
+        print_error "Unknown command: $COMMAND"
+        show_help
+        exit 1
         ;;
 esac
