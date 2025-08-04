@@ -406,12 +406,19 @@ EOF
         if docker-compose -f docker-compose.prod.yml exec postgres pg_isready -U splitbuddy_user_prod > /dev/null 2>&1; then
             print_success "PostgreSQL container is ready!"
 
-            # Test network connectivity from app to postgres
+                        # Test network connectivity from app to postgres
             print_status "Testing network connectivity..."
             print_status "Container network info:"
             docker-compose -f docker-compose.prod.yml exec app cat /etc/hosts | grep postgres || print_warning "No postgres entry in /etc/hosts"
-            docker-compose -f docker-compose.prod.yml exec app nslookup postgres || print_warning "Cannot resolve postgres hostname"
-
+            
+            # Try different DNS resolution methods
+            if docker-compose -f docker-compose.prod.yml exec app which nslookup > /dev/null 2>&1; then
+                docker-compose -f docker-compose.prod.yml exec app nslookup postgres || print_warning "Cannot resolve postgres hostname"
+            else
+                print_warning "nslookup not available, trying alternative methods"
+                docker-compose -f docker-compose.prod.yml exec app getent hosts postgres || print_warning "Cannot resolve postgres hostname"
+            fi
+            
             if docker-compose -f docker-compose.prod.yml exec app ping -c 3 postgres > /dev/null 2>&1; then
                 print_success "Network connectivity OK"
 
@@ -439,6 +446,15 @@ EOF
                     docker-compose -f docker-compose.prod.yml restart
                     sleep 10
                 fi
+                
+                # Recreate network after 5 failed attempts
+                if [ $DB_RETRY_COUNT -eq 5 ]; then
+                    print_status "Recreating Docker network to fix connectivity..."
+                    docker-compose -f docker-compose.prod.yml down
+                    docker network prune -f 2>/dev/null || true
+                    docker-compose -f docker-compose.prod.yml up -d
+                    sleep 15
+                fi
             fi
         else
             print_warning "PostgreSQL container not ready (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
@@ -463,6 +479,18 @@ EOF
             print_status "Docker network info:"
             docker network ls
             docker-compose -f docker-compose.prod.yml exec app ip route || print_warning "Cannot get routing info"
+            
+            print_status "Container network details:"
+            docker-compose -f docker-compose.prod.yml exec app cat /etc/hosts
+            docker-compose -f docker-compose.prod.yml exec app env | grep -E "(HOST|POSTGRES|DB)" || print_warning "No relevant environment variables"
+            
+            print_status "Testing direct IP connectivity:"
+            POSTGRES_IP=$(docker-compose -f docker-compose.prod.yml exec app getent hosts postgres | awk '{print $1}' 2>/dev/null || echo "")
+            if [ -n "$POSTGRES_IP" ]; then
+                docker-compose -f docker-compose.prod.yml exec app ping -c 3 "$POSTGRES_IP" || print_warning "Cannot ping postgres IP: $POSTGRES_IP"
+            else
+                print_warning "Could not resolve postgres IP"
+            fi
             exit 1
         fi
 
