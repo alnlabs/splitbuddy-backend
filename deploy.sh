@@ -410,7 +410,7 @@ EOF
             print_status "Testing network connectivity..."
             print_status "Container network info:"
             docker-compose -f docker-compose.prod.yml exec app cat /etc/hosts | grep postgres || print_warning "No postgres entry in /etc/hosts"
-            
+
             # Try different DNS resolution methods
             if docker-compose -f docker-compose.prod.yml exec app which nslookup > /dev/null 2>&1; then
                 docker-compose -f docker-compose.prod.yml exec app nslookup postgres || print_warning "Cannot resolve postgres hostname"
@@ -418,7 +418,7 @@ EOF
                 print_warning "nslookup not available, trying alternative methods"
                 docker-compose -f docker-compose.prod.yml exec app getent hosts postgres || print_warning "Cannot resolve postgres hostname"
             fi
-            
+
             if docker-compose -f docker-compose.prod.yml exec app ping -c 3 postgres > /dev/null 2>&1; then
                 print_success "Network connectivity OK"
 
@@ -446,7 +446,7 @@ EOF
                     docker-compose -f docker-compose.prod.yml restart
                     sleep 10
                 fi
-                
+
                 # Recreate network after 5 failed attempts
                 if [ $DB_RETRY_COUNT -eq 5 ]; then
                     print_status "Recreating Docker network to fix connectivity..."
@@ -479,11 +479,11 @@ EOF
             print_status "Docker network info:"
             docker network ls
             docker-compose -f docker-compose.prod.yml exec app ip route || print_warning "Cannot get routing info"
-            
+
             print_status "Container network details:"
             docker-compose -f docker-compose.prod.yml exec app cat /etc/hosts
             docker-compose -f docker-compose.prod.yml exec app env | grep -E "(HOST|POSTGRES|DB)" || print_warning "No relevant environment variables"
-            
+
             print_status "Testing direct IP connectivity:"
             POSTGRES_IP=$(docker-compose -f docker-compose.prod.yml exec app getent hosts postgres | awk '{print $1}' 2>/dev/null || echo "")
             if [ -n "$POSTGRES_IP" ]; then
