@@ -50,13 +50,30 @@ export class AuthService {
 
   async googleVerify(idToken: string): Promise<any> {
     try {
-      const ticket = await this.googleClient.verifyIdToken({
-        idToken,
-        audience: env.google.clientId,
-      });
+      // Try with web client ID first
+      let ticket;
+      try {
+        ticket = await this.googleClient.verifyIdToken({
+          idToken,
+          audience: env.google.clientId,
+        });
+      } catch (webError) {
+        // If web client fails, try with Android client ID
+        if (env.google.androidClientId) {
+          const androidClient = new OAuth2Client(env.google.androidClientId);
+          ticket = await androidClient.verifyIdToken({
+            idToken,
+            audience: env.google.androidClientId,
+          });
+        } else {
+          throw webError;
+        }
+      }
+
       const payload = ticket.getPayload();
       return payload;
     } catch (error) {
+      console.error('Google token verification failed:', error);
       throw new UnauthorizedException('Invalid Google token');
     }
   }
@@ -173,6 +190,56 @@ export class AuthService {
       };
     } catch (error) {
       throw new UnauthorizedException('Google authentication failed');
+    }
+  }
+
+  async googleSignup(googleAuthDto: GoogleAuthDto): Promise<any> {
+    const { idToken } = googleAuthDto;
+
+    try {
+      const payload = await this.googleVerify(idToken);
+      const { email, given_name, family_name } = payload;
+
+      // Check if user already exists
+      const existingUser = await this.userRepository.findOne({
+        where: { email },
+      });
+
+      if (existingUser) {
+        throw new BadRequestException('User already exists. Please sign in instead.');
+      }
+
+      // Create new user from Google data
+      const user = this.userRepository.create({
+        email,
+        firstName: given_name,
+        lastName: family_name,
+        username: email,
+        loginType: 'GOOGLE',
+        activated: true, // Google users are pre-verified
+      });
+
+      const savedUser = await this.userRepository.save(user);
+
+      const jwtPayload = { email: savedUser.email, sub: savedUser.id };
+      const token = this.jwtService.sign(jwtPayload);
+
+      return {
+        success: true,
+        data: {
+          token: token,
+          userProfile: {
+            id: savedUser.id,
+            email: savedUser.email,
+            firstName: savedUser.firstName,
+            lastName: savedUser.lastName,
+            username: savedUser.username || savedUser.email,
+          },
+        },
+      };
+    } catch (error) {
+      console.error('Google signup error:', error);
+      throw error;
     }
   }
 
