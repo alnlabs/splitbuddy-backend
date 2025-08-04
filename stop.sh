@@ -176,13 +176,13 @@ show_status() {
 # Safe cleanup - removes only unused resources
 cleanup_safe() {
     print_status "Performing safe cleanup (unused resources only)..."
-    
+
     # Show what will be deleted
     print_info "Will delete:"
     print_info "  - Stopped containers"
     print_info "  - Unused networks"
     print_info "  - Dangling images (untagged images)"
-    
+
     read -p "Continue with safe cleanup? (y/N): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         print_warning "Safe cleanup cancelled"
@@ -207,14 +207,14 @@ cleanup_safe() {
 # Aggressive cleanup - removes more resources including unused images
 cleanup_aggressive() {
     print_status "Performing aggressive cleanup..."
-    
+
     # Show what will be deleted
     print_info "Will delete:"
     print_info "  - Everything from safe cleanup"
     print_info "  - ALL unused images (including tagged ones)"
     print_info "  - Unused build cache"
     print_warning "This will free significant disk space but may remove images you might need later"
-    
+
     read -p "Continue with aggressive cleanup? (y/N): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         print_warning "Aggressive cleanup cancelled"
@@ -244,11 +244,11 @@ cleanup_nuclear() {
     print_warning "  - All networks"
     print_warning "  - All volumes (this will DELETE your data!)"
     print_warning "  - All build cache"
-    
+
     # Show current resource usage
     print_info "Current Docker resources:"
     docker system df --format "table {{.Type}}\t{{.TotalCount}}\t{{.Size}}\t{{.Reclaimable}}"
-    
+
     print_warning "⚠️  WARNING: This will DELETE ALL your Docker data including databases!"
     read -p "Are you absolutely sure? Type 'YES' to continue: " confirm
     if [ "$confirm" != "YES" ]; then
