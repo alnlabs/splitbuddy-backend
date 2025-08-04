@@ -411,7 +411,7 @@ EOF
             print_status "Container network info:"
             docker-compose -f docker-compose.prod.yml exec app cat /etc/hosts | grep postgres || print_warning "No postgres entry in /etc/hosts"
             docker-compose -f docker-compose.prod.yml exec app nslookup postgres || print_warning "Cannot resolve postgres hostname"
-            
+
             if docker-compose -f docker-compose.prod.yml exec app ping -c 3 postgres > /dev/null 2>&1; then
                 print_success "Network connectivity OK"
 
@@ -432,7 +432,7 @@ EOF
                 fi
             else
                 print_warning "Network connectivity failed (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
-                
+
                 # Restart containers after 3 failed attempts to fix network issues
                 if [ $DB_RETRY_COUNT -eq 3 ]; then
                     print_status "Restarting containers to fix network connectivity..."
