@@ -439,7 +439,7 @@ EOF
                 fi
             else
                 print_warning "Network connectivity failed (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
-                
+
                 # Try TCP connectivity as alternative to ping
                 print_status "Testing TCP connectivity to postgres:5432..."
                 if docker-compose -f docker-compose.prod.yml exec app sh -c "timeout 5 bash -c '</dev/tcp/postgres/5432'"; then
