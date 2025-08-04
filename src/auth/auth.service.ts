@@ -89,12 +89,16 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     return {
-      access_token: token,
-      user: {
-        id: savedUser.id,
-        email: savedUser.email,
-        firstName: savedUser.firstName,
-        lastName: savedUser.lastName,
+      success: true,
+      data: {
+        token: token,
+        userProfile: {
+          id: savedUser.id,
+          email: savedUser.email,
+          firstName: savedUser.firstName,
+          lastName: savedUser.lastName,
+          username: savedUser.username || savedUser.email,
+        },
       },
     };
   }
@@ -114,12 +118,16 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     return {
-      access_token: token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+      success: true,
+      data: {
+        token: token,
+        userProfile: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username || user.email,
+        },
       },
     };
   }
@@ -153,12 +161,13 @@ export class AuthService {
       return {
         success: true,
         data: {
-          access_token: token,
-          user: {
+          token: token,
+          userProfile: {
             id: user.id,
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
+            username: user.username || user.email,
           },
         },
       };
