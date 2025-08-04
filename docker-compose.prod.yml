@@ -7,6 +7,8 @@ services:
         SKIP_INSTALL: ${SKIP_INSTALL:-false}
     ports:
       - '5900:5900'
+    networks:
+      - splitbuddy-network
     environment:
       - NODE_ENV=production
       - DB_HOST=${DB_HOST:-postgres}
@@ -52,13 +54,21 @@ services:
       - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql
     ports:
       - '5433:5432' # Changed from 5432:5432 to avoid conflict
+    networks:
+      - splitbuddy-network
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     ports:
       - '6379:6379'
+    networks:
+      - splitbuddy-network
     restart: unless-stopped
+
+networks:
+  splitbuddy-network:
+    driver: bridge
 
 volumes:
   postgres_data:
