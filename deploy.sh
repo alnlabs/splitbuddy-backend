@@ -401,22 +401,38 @@ EOF
     MAX_DB_RETRIES=10
 
     while [ $DB_RETRY_COUNT -lt $MAX_DB_RETRIES ]; do
-        # First check if postgres container is ready
+                # First check if postgres container is ready
         print_status "Checking if PostgreSQL container is ready..."
         if docker-compose -f docker-compose.prod.yml exec postgres pg_isready -U splitbuddy_user_prod > /dev/null 2>&1; then
             print_success "PostgreSQL container is ready!"
-            
-            # Now test the app's connection to postgres
-            if docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
-                print_success "Database connection successful!"
-                break
+
+            # Test network connectivity from app to postgres
+            print_status "Testing network connectivity..."
+            if docker-compose -f docker-compose.prod.yml exec app ping -c 3 postgres > /dev/null 2>&1; then
+                print_success "Network connectivity OK"
+
+                # Test port connectivity
+                print_status "Testing port connectivity..."
+                if docker-compose -f docker-compose.prod.yml exec app sh -c "timeout 5 bash -c '</dev/tcp/postgres/5432' && echo 'Port 5432 is reachable' || echo 'Port 5432 is not reachable'" 2>/dev/null | grep -q "Port 5432 is reachable"; then
+                    print_success "Port 5432 is reachable"
+
+                    # Now test the app's connection to postgres
+                    if docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
+                        print_success "Database connection successful!"
+                        break
+                    else
+                        print_warning "App cannot connect to database (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
+                    fi
+                else
+                    print_warning "Port 5432 is not reachable (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
+                fi
             else
-                print_warning "App cannot connect to database (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
+                print_warning "Network connectivity failed (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
             fi
         else
             print_warning "PostgreSQL container not ready (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
         fi
-        
+
         DB_RETRY_COUNT=$((DB_RETRY_COUNT + 1))
 
         if [ $DB_RETRY_COUNT -eq $MAX_DB_RETRIES ]; then
@@ -425,10 +441,14 @@ EOF
             docker-compose -f docker-compose.prod.yml logs postgres | tail -20
             print_status "App logs:"
             docker-compose -f docker-compose.prod.yml logs app | tail -20
+            print_status "PostgreSQL container status:"
+            docker-compose -f docker-compose.prod.yml exec postgres netstat -tlnp 2>/dev/null | grep 5432 || print_warning "PostgreSQL not listening on 5432"
             print_status "Network connectivity test:"
             docker-compose -f docker-compose.prod.yml exec app ping -c 3 postgres || print_warning "Cannot ping postgres"
             print_status "Port connectivity test:"
             docker-compose -f docker-compose.prod.yml exec app sh -c "timeout 5 bash -c '</dev/tcp/postgres/5432' && echo 'Port 5432 is reachable' || echo 'Port 5432 is not reachable'" || print_warning "Port test failed"
+            print_status "Container network info:"
+            docker-compose -f docker-compose.prod.yml exec app cat /etc/hosts | grep postgres || print_warning "No postgres entry in /etc/hosts"
             exit 1
         fi
 
