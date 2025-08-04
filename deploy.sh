@@ -344,15 +344,59 @@ EOF
     print_status "Waiting for database to be fully ready..."
     sleep 15
 
-    # Check database connection
+    # Check if app container is ready
+    print_status "Checking if app container is ready..."
+    APP_RETRY_COUNT=0
+    MAX_APP_RETRIES=10
+
+    while [ $APP_RETRY_COUNT -lt $MAX_APP_RETRIES ]; do
+        if docker-compose -f docker-compose.prod.yml exec app ps aux > /dev/null 2>&1; then
+            print_success "App container is ready!"
+            break
+        else
+            APP_RETRY_COUNT=$((APP_RETRY_COUNT + 1))
+            print_warning "App container not ready (attempt $APP_RETRY_COUNT/$MAX_APP_RETRIES)"
+
+            if [ $APP_RETRY_COUNT -eq $MAX_APP_RETRIES ]; then
+                print_error "App container failed to start after $MAX_APP_RETRIES attempts"
+                print_status "App logs:"
+                docker-compose -f docker-compose.prod.yml logs app
+                exit 1
+            fi
+
+            print_status "Waiting for app container in 5 seconds..."
+            sleep 5
+        fi
+    done
+
+    # Check database connection with retry logic
     print_status "Checking database connection..."
-    if ! docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" > /dev/null 2>&1; then
-        print_error "Database connection failed"
-        print_status "Database logs:"
-        docker-compose -f docker-compose.prod.yml logs postgres
-        exit 1
-    fi
-    print_success "Database connection successful"
+    DB_RETRY_COUNT=0
+    MAX_DB_RETRIES=5
+
+    while [ $DB_RETRY_COUNT -lt $MAX_DB_RETRIES ]; do
+        if docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" > /dev/null 2>&1; then
+            print_success "Database connection successful!"
+            break
+        else
+            DB_RETRY_COUNT=$((DB_RETRY_COUNT + 1))
+            print_warning "Database connection failed (attempt $DB_RETRY_COUNT/$MAX_DB_RETRIES)"
+
+            if [ $DB_RETRY_COUNT -eq $MAX_DB_RETRIES ]; then
+                print_error "Database connection failed after $MAX_DB_RETRIES attempts"
+                print_status "Database logs:"
+                docker-compose -f docker-compose.prod.yml logs postgres
+                print_status "App logs:"
+                docker-compose -f docker-compose.prod.yml logs app | tail -20
+                print_status "Checking if app container is ready..."
+                docker-compose -f docker-compose.prod.yml exec app ps aux || print_warning "App container not ready"
+                exit 1
+            fi
+
+            print_status "Retrying database connection in 10 seconds..."
+            sleep 10
+        fi
+    done
 
     # Check if migrations exist
     print_status "Checking for migration files..."
@@ -457,13 +501,30 @@ check_migrations() {
         return 1
     fi
 
-    # Check database connection
+    # Check database connection with retry logic
     print_status "Testing database connection..."
-    if ! docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" > /dev/null 2>&1; then
-        print_error "Database connection failed"
-        return 1
-    fi
-    print_success "Database connection successful"
+    DB_RETRY_COUNT=0
+    MAX_DB_RETRIES=5
+
+    while [ $DB_RETRY_COUNT -lt $MAX_DB_RETRIES ]; do
+        if docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" > /dev/null 2>&1; then
+            print_success "Database connection successful!"
+            break
+        else
+            DB_RETRY_COUNT=$((DB_RETRY_COUNT + 1))
+            print_warning "Database connection failed (attempt $DB_RETRY_COUNT/$MAX_DB_RETRIES)"
+
+            if [ $DB_RETRY_COUNT -eq $MAX_DB_RETRIES ]; then
+                print_error "Database connection failed after $MAX_DB_RETRIES attempts"
+                print_status "Database logs:"
+                docker-compose -f docker-compose.prod.yml logs postgres
+                return 1
+            fi
+
+            print_status "Retrying database connection in 5 seconds..."
+            sleep 5
+        fi
+    done
 
     # Check migration files
     print_status "Checking migration files..."
