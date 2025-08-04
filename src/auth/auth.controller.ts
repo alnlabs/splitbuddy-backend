@@ -225,6 +225,21 @@ export class AuthController {
     return this.authService.googleLogin(dto);
   }
 
+  @Post('google/signup')
+  @ApiOperation({ summary: 'Signup with Google OAuth' })
+  @ApiResponse({ status: 200, description: 'Google signup successful' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid Google token',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - User already exists',
+  })
+  async googleSignup(@Body() dto: GoogleAuthDto) {
+    return this.authService.googleSignup(dto);
+  }
+
   @Post('google/verify')
   @ApiOperation({ summary: 'Verify Google ID token' })
   @ApiResponse({ status: 200, description: 'Token verified successfully' })

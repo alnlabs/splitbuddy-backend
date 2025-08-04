@@ -39,6 +39,7 @@ export interface EnvironmentConfig {
     clientId: string;
     clientSecret: string;
     callbackUrl: string;
+    androidClientId: string;
   };
 
   // App Configuration
@@ -92,6 +93,7 @@ export const env: EnvironmentConfig = {
     callbackUrl:
       process.env.GOOGLE_CALLBACK_URL ||
       'http://localhost:5900/api/v1/auth/google/callback',
+    androidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID || '',
   },
 
   // App Configuration
