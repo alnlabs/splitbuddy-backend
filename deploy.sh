@@ -445,6 +445,14 @@ EOF
                 if docker-compose -f docker-compose.prod.yml exec app sh -c "timeout 5 bash -c '</dev/tcp/postgres/5432'"; then
                     print_success "TCP connectivity to postgres:5432 OK"
                     print_success "Network connectivity OK (TCP working)"
+
+                    # Now test the app's connection to postgres since network is working
+                    if docker-compose -f docker-compose.prod.yml exec app npm run migration:run --dry-run > /dev/null 2>&1; then
+                        print_success "Database connection successful!"
+                        break
+                    else
+                        print_warning "App cannot connect to database (attempt $((DB_RETRY_COUNT + 1))/$MAX_DB_RETRIES)"
+                    fi
                 else
                     print_warning "TCP connectivity to postgres:5432 failed"
 
