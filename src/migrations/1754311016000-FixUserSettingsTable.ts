@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class FixUserSettingsTable1754311016 implements MigrationInterface {
-  name = 'FixUserSettingsTable1754311016';
+export class FixUserSettingsTable1754311016000 implements MigrationInterface {
+  name = 'FixUserSettingsTable1754311016000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Check if the foreign key constraint exists and drop it
