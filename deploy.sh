@@ -369,6 +369,14 @@ EOF
         fi
     done
 
+        # Debug: Check environment variables in app container
+    print_status "Checking environment variables in app container..."
+    docker-compose -f docker-compose.prod.yml exec app printenv | grep -E "(DB_|REDIS_|JWT_|NODE_ENV)" || print_warning "Could not check environment variables"
+
+    # Test basic database connectivity
+    print_status "Testing basic database connectivity..."
+    docker-compose -f docker-compose.prod.yml exec app sh -c "echo 'Testing connection to postgres:5432...' && nc -z postgres 5432 && echo 'Port 5432 is reachable' || echo 'Port 5432 is not reachable'"
+
     # Check database connection with retry logic
     print_status "Checking database connection..."
     DB_RETRY_COUNT=0
@@ -390,6 +398,8 @@ EOF
                 docker-compose -f docker-compose.prod.yml logs app | tail -20
                 print_status "Checking if app container is ready..."
                 docker-compose -f docker-compose.prod.yml exec app ps aux || print_warning "App container not ready"
+                print_status "Trying to connect to database manually..."
+                docker-compose -f docker-compose.prod.yml exec app npm run typeorm -- query "SELECT 1" 2>&1 || print_warning "Manual connection test failed"
                 exit 1
             fi
 
