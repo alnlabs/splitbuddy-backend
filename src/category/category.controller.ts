@@ -7,7 +7,9 @@ import {
   Patch,
   Delete,
   UseGuards,
+  Request,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { CategoryService } from './category.service';
 import {
   ApiProperty,
@@ -18,6 +20,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { User } from '../entities/user.entity';
 
 class CreateCategoryDto {
   @ApiProperty({ description: 'Category name' }) name: string;
@@ -67,8 +70,8 @@ export class CategoryController {
     description: 'Categories retrieved successfully',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async list() {
-    return this.categoryService.list();
+  async list(@Request() req: ExpressRequest & { user: User }) {
+    return this.categoryService.list(req.user.id);
   }
 
   @ApiBearerAuth()

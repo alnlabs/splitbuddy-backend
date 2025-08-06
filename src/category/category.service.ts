@@ -20,8 +20,16 @@ export class CategoryService {
     return this.categoryRepo.findOne({ where: { id } });
   }
 
-  async list() {
-    return this.categoryRepo.find({ order: { name: 'ASC' } });
+  async list(userId?: string) {
+    if (userId) {
+      return this.categoryRepo.find({
+        where: { authorId: userId },
+        order: { name: 'ASC' },
+      });
+    } else {
+      // Return all categories (for admin purposes or if no userId provided)
+      return this.categoryRepo.find({ order: { name: 'ASC' } });
+    }
   }
 
   async update(id: string, dto: any) {
