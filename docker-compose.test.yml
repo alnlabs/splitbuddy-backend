@@ -1,0 +1,90 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SKIP_INSTALL: ${SKIP_INSTALL:-false}
+    container_name: splitbuddy_backend_test
+    ports:
+      - '5901:5900'  # Different port for testing
+    env_file:
+      - .env.test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5900/api/v1/db-test']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - splitbuddy_test_network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: splitbuddy_postgres_test
+    environment:
+      - POSTGRES_DB=${DB_DATABASE:-splitbuddy_test}
+      - POSTGRES_USER=${DB_USERNAME:-splitbuddy_user_test}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-SplitBuddy2024!Test}
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+      - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql
+    ports:
+      - '5434:5432'  # Different port for testing
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-splitbuddy_user_test} -d ${DB_DATABASE:-splitbuddy_test}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - splitbuddy_test_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: splitbuddy_redis_test
+    ports:
+      - '6380:6379'  # Different port for testing
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - splitbuddy_test_network
+
+  # Test runner service for automated testing
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SKIP_INSTALL: ${SKIP_INSTALL:-false}
+    container_name: splitbuddy_test_runner
+    env_file:
+      - .env.test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["npm", "run", "test"]
+    networks:
+      - splitbuddy_test_network
+    profiles:
+      - testing  # Only run when explicitly requested
+
+networks:
+  splitbuddy_test_network:
+    driver: bridge
+
+volumes:
+  postgres_data_test:

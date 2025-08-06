@@ -3,28 +3,28 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-} from "typeorm";
+} from 'typeorm';
 
-@Entity("invitations")
+@Entity('invitations')
 export class Invitation {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: "sender_id", type: "uuid" })
+  @Column({ name: 'sender_id', type: 'uuid' })
   senderId: string;
 
-  @Column({ name: "recipient_email" })
+  @Column({ name: 'recipient_email' })
   recipientEmail: string;
 
-  @Column({ name: "group_id", type: "uuid" })
+  @Column({ name: 'group_id', type: 'uuid' })
   groupId: string;
 
-  @Column({ default: "PENDING" })
+  @Column({ default: 'PENDING' })
   status: string;
 
-  @Column({ type: "uuid", unique: true })
+  @Column({ type: 'uuid', unique: true })
   token: string;
 
-  @CreateDateColumn({ name: "created_at" })
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

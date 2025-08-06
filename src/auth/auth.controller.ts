@@ -225,11 +225,36 @@ export class AuthController {
     return this.authService.googleLogin(dto);
   }
 
+  @Post('google/signup')
+  @ApiOperation({ summary: 'Signup with Google OAuth' })
+  @ApiResponse({ status: 200, description: 'Google signup successful' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid Google token',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - User already exists',
+  })
+  async googleSignup(@Body() dto: GoogleAuthDto) {
+    return this.authService.googleSignup(dto);
+  }
+
   @Post('google/verify')
   @ApiOperation({ summary: 'Verify Google ID token' })
   @ApiResponse({ status: 200, description: 'Token verified successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid token' })
   async googleVerify(@Body() dto: GoogleAuthDto) {
     return this.authService.googleVerify(dto.idToken);
+  }
+
+  @Post('logout')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async logout(@Request() req: UserRequest) {
+    return this.authService.logout(req.user.userId);
   }
 }

@@ -4,28 +4,28 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
+} from 'typeorm';
 
-@Entity("clients")
+@Entity('clients')
 export class Client {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: "client_name", unique: true })
+  @Column({ name: 'client_name', unique: true })
   clientName: string;
 
-  @Column({ name: "contact_email" })
+  @Column({ name: 'contact_email' })
   contactEmail: string;
 
-  @Column({ name: "contact_phone", nullable: true })
+  @Column({ name: 'contact_phone', nullable: true })
   contactPhone: string;
 
   @Column({ nullable: true })
   address: string;
 
-  @CreateDateColumn({ name: "created_at" })
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: "updated_at" })
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

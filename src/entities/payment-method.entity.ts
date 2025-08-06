@@ -4,22 +4,22 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
+} from 'typeorm';
 
-@Entity("payment_methods")
+@Entity('payment_methods')
 export class PaymentMethod {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ unique: true })
   name: string;
 
-  @Column({ name: "author_id", type: "uuid", nullable: true })
+  @Column({ name: 'author_id', type: 'uuid', nullable: true })
   authorId: string | null;
 
-  @CreateDateColumn({ name: "created_at" })
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: "updated_at" })
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

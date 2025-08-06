@@ -1,35 +1,16 @@
+version: '3.8'
 services:
-  app:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         SKIP_INSTALL: ${SKIP_INSTALL:-false}
+    container_name: splitbuddy_backend_prod
     ports:
       - '5900:5900'
-    environment:
-      - NODE_ENV=production
-      - DB_HOST=${DB_HOST:-postgres}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_USERNAME=${DB_USERNAME:-splitbuddy_user_prod}
-      - DB_PASSWORD=${DB_PASSWORD:-SplitBuddy2024!Secure}
-      - DB_DATABASE=${DB_DATABASE:-splitbuddy_prod}
-      - JWT_SECRET=${JWT_SECRET:-fallback-secret-key}
-      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASS=${SMTP_PASS:-}
-      - SMTP_FROM=${SMTP_FROM:-}
-      - REDIS_HOST=${REDIS_HOST:-redis}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:5900/api/v1/auth/google/callback}
-      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
-      - APP_PORT=${APP_PORT:-5900}
-      - PORT=${PORT:-5900}
-      - EMAIL_QUEUE_NAME=${EMAIL_QUEUE_NAME:-email-queue}
-      - NOTIFICATION_QUEUE_NAME=${NOTIFICATION_QUEUE_NAME:-notification-queue}
+    env_file:
+      - .env.prod
     depends_on:
       - postgres
       - redis
@@ -43,22 +24,34 @@ services:
 
   postgres:
     image: postgres:15-alpine
+    container_name: splitbuddy_postgres_prod
     environment:
-      - POSTGRES_DB=${DB_DATABASE}
-      - POSTGRES_USER=${DB_USERNAME}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_DATABASE:-splitbuddy_prod}
+      - POSTGRES_USER=${DB_USERNAME:-splitbuddy_user_prod}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-SplitBuddy2024!Secure}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_prod:/var/lib/postgresql/data
       - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql
     ports:
       - '5433:5432' # Changed from 5432:5432 to avoid conflict
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-splitbuddy_user_prod} -d ${DB_DATABASE:-splitbuddy_prod}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   redis:
     image: redis:7-alpine
+    container_name: splitbuddy_redis_prod
     ports:
       - '6379:6379'
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
-  postgres_data:
+  postgres_data_prod:

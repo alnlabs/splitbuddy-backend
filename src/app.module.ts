@@ -51,7 +51,7 @@ if (env.redis.host && env.redis.port) {
         host: env.redis.host,
         port: env.redis.port,
       },
-    })
+    }),
   );
 }
 

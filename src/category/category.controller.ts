@@ -21,11 +21,13 @@ import { AuthGuard } from '@nestjs/passport';
 
 class CreateCategoryDto {
   @ApiProperty({ description: 'Category name' }) name: string;
-  @ApiProperty({ required: false, description: 'Author ID (optional)' }) authorId?: string;
+  @ApiProperty({ required: false, description: 'Author ID (optional)' })
+  authorId?: string;
 }
 
 class UpdateCategoryDto {
-  @ApiProperty({ required: false, description: 'Updated category name' }) name?: string;
+  @ApiProperty({ required: false, description: 'Updated category name' })
+  name?: string;
 }
 
 @ApiTags('Categories')
@@ -60,7 +62,10 @@ export class CategoryController {
   @UseGuards(AuthGuard('jwt'))
   @Get()
   @ApiOperation({ summary: 'List all categories' })
-  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async list() {
     return this.categoryService.list();

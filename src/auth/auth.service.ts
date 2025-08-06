@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -46,13 +50,30 @@ export class AuthService {
 
   async googleVerify(idToken: string): Promise<any> {
     try {
-      const ticket = await this.googleClient.verifyIdToken({
-        idToken,
-        audience: env.google.clientId,
-      });
+      // Try with web client ID first
+      let ticket;
+      try {
+        ticket = await this.googleClient.verifyIdToken({
+          idToken,
+          audience: env.google.clientId,
+        });
+      } catch (webError) {
+        // If web client fails, try with Android client ID
+        if (env.google.androidClientId) {
+          const androidClient = new OAuth2Client(env.google.androidClientId);
+          ticket = await androidClient.verifyIdToken({
+            idToken,
+            audience: env.google.androidClientId,
+          });
+        } else {
+          throw webError;
+        }
+      }
+
       const payload = ticket.getPayload();
       return payload;
     } catch (error) {
+      console.error('Google token verification failed:', error);
       throw new UnauthorizedException('Invalid Google token');
     }
   }
@@ -85,12 +106,16 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     return {
-      access_token: token,
-      user: {
-        id: savedUser.id,
-        email: savedUser.email,
-        firstName: savedUser.firstName,
-        lastName: savedUser.lastName,
+      success: true,
+      data: {
+        token: token,
+        userProfile: {
+          id: savedUser.id,
+          email: savedUser.email,
+          firstName: savedUser.firstName,
+          lastName: savedUser.lastName,
+          username: savedUser.username || savedUser.email,
+        },
       },
     };
   }
@@ -110,12 +135,16 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     return {
-      access_token: token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+      success: true,
+      data: {
+        token: token,
+        userProfile: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username || user.email,
+        },
       },
     };
   }
@@ -147,12 +176,16 @@ export class AuthService {
       const token = this.jwtService.sign(jwtPayload);
 
       return {
-        access_token: token,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
+        success: true,
+        data: {
+          token: token,
+          userProfile: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username || user.email,
+          },
         },
       };
     } catch (error) {
@@ -172,7 +205,10 @@ export class AuthService {
     return user;
   }
 
-  async updateProfile(userId: string, updateData: Partial<User>): Promise<User> {
+  async updateProfile(
+    userId: string,
+    updateData: Partial<User>,
+  ): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -185,7 +221,11 @@ export class AuthService {
     return await this.userRepository.save(user);
   }
 
-  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<void> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -214,7 +254,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(
       { email, sub: user.id },
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     const resetLink = `${env.app.corsOrigin || 'http://localhost:5900'}/api/v1/auth/reset-password?token=${token}`;
@@ -222,7 +262,7 @@ export class AuthService {
     await this.notificationService.sendEmail(
       email,
       'Password Reset Request',
-      `Click the following link to reset your password: ${resetLink}`
+      `Click the following link to reset your password: ${resetLink}`,
     );
   }
 
@@ -255,7 +295,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(
       { email, sub: user.id },
-      { expiresIn: '24h' }
+      { expiresIn: '24h' },
     );
 
     const verifyLink = `${env.app.corsOrigin || 'http://localhost:5900'}/api/v1/auth/verify-email?token=${token}`;
@@ -263,7 +303,7 @@ export class AuthService {
     await this.notificationService.sendEmail(
       email,
       'Email Verification',
-      `Click the following link to verify your email: ${verifyLink}`
+      `Click the following link to verify your email: ${verifyLink}`,
     );
   }
 
@@ -283,5 +323,73 @@ export class AuthService {
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');
     }
+  }
+
+  async googleSignup(googleAuthDto: GoogleAuthDto): Promise<any> {
+    const { idToken } = googleAuthDto;
+
+    // Verify the Google token
+    const payload = await this.googleVerify(idToken);
+    const { email, given_name, family_name } = payload;
+
+    // Check if user already exists
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('User already exists');
+    }
+
+    // Create new user from Google data
+    const user = this.userRepository.create({
+      email,
+      firstName: given_name,
+      lastName: family_name,
+      username: email,
+      loginType: 'GOOGLE',
+      activated: true, // Google emails are pre-verified
+    });
+
+    const savedUser = await this.userRepository.save(user);
+
+    // Generate JWT token
+    const jwtPayload = { email: savedUser.email, sub: savedUser.id };
+    const token = this.jwtService.sign(jwtPayload);
+
+    return {
+      success: true,
+      data: {
+        token: token,
+        userProfile: {
+          id: savedUser.id,
+          email: savedUser.email,
+          firstName: savedUser.firstName,
+          lastName: savedUser.lastName,
+          username: savedUser.username || savedUser.email,
+        },
+      },
+    };
+  }
+
+  async logout(userId: string): Promise<any> {
+    // For JWT-based auth, logout is typically handled client-side
+    // But we can invalidate the user's token or update last activity
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Update last activity or clear any session data if needed
+    user.lastLoginAt = new Date();
+    await this.userRepository.save(user);
+
+    return {
+      success: true,
+      message: 'Logout successful',
+    };
   }
 }

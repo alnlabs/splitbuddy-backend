@@ -4,31 +4,31 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
+} from 'typeorm';
 
-@Entity("settings")
+@Entity('settings')
 export class Settings {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ default: "light" })
+  @Column({ default: 'light' })
   theme: string;
 
-  @Column({ name: "default_category_id", type: "uuid" })
+  @Column({ name: 'default_category_id', type: 'uuid' })
   defaultCategoryId: string;
 
-  @Column({ name: "default_payment_method_id", type: "uuid" })
+  @Column({ name: 'default_payment_method_id', type: 'uuid' })
   defaultPaymentMethodId: string;
 
-  @Column({ type: "jsonb", default: () => "'{}'" })
+  @Column({ type: 'jsonb', default: () => "'{}'" })
   config: any;
 
-  @Column({ name: "author_id", type: "uuid", nullable: true })
+  @Column({ name: 'author_id', type: 'uuid', nullable: true })
   authorId: string | null;
 
-  @CreateDateColumn({ name: "created_at" })
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: "updated_at" })
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }
