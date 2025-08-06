@@ -9,9 +9,11 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { PaymentMethodService } from './payment-method.service';
 import { ApiProperty } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { User } from '../entities/user.entity';
 
 class CreatePaymentMethodDto {
   @ApiProperty() name: string;
@@ -46,7 +48,7 @@ export class PaymentMethodController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
-  async list(@Request() req) {
+  async list(@Request() req: ExpressRequest & { user: User }) {
     return this.paymentMethodService.list(req.user.id);
   }
 
