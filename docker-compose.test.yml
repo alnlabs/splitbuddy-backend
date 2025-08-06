@@ -8,7 +8,7 @@ services:
         SKIP_INSTALL: ${SKIP_INSTALL:-false}
     container_name: splitbuddy_backend_test
     ports:
-      - '5901:5900'  # Different port to avoid conflict with production
+      - '5900:5900' # Use same port as production since paths are different
     env_file:
       - .env.test
     depends_on:
@@ -18,7 +18,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:5900/api/v1/db-test']
+      test: ['CMD', 'curl', '-f', 'http://localhost:5900/api/test/db-test']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -35,10 +35,11 @@ services:
       - postgres_data_test:/var/lib/postgresql/data
       - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql
     ports:
-      - '5434:5432'  # Different port to avoid conflict with production
+      - '5434:5432' # Different port to avoid conflict with production
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U splitbuddy_user_test -d splitbuddy_test"]
+      test:
+        ['CMD-SHELL', 'pg_isready -U splitbuddy_user_test -d splitbuddy_test']
       interval: 30s
       timeout: 10s
       retries: 5
@@ -51,10 +52,10 @@ services:
     env_file:
       - .env.test
     ports:
-      - '6380:6379'  # Different port to avoid conflict with production
+      - '6380:6379' # Different port to avoid conflict with production
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -76,11 +77,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: ["npm", "run", "test"]
+    command: ['npm', 'run', 'test']
     networks:
       - splitbuddy_test_network
     profiles:
-      - testing  # Only run when explicitly requested
+      - testing # Only run when explicitly requested
 
 networks:
   splitbuddy_test_network:
