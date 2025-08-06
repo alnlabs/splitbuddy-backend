@@ -36,7 +36,8 @@ services:
       - '5433:5432' # Changed from 5432:5432 to avoid conflict
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U splitbuddy_user_prod -d splitbuddy_prod"]
+      test:
+        ['CMD-SHELL', 'pg_isready -U splitbuddy_user_prod -d splitbuddy_prod']
       interval: 30s
       timeout: 10s
       retries: 5
@@ -50,7 +51,7 @@ services:
       - '6379:6379'
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 30s
       timeout: 10s
       retries: 3
