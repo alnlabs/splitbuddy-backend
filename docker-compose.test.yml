@@ -8,7 +8,7 @@ services:
         SKIP_INSTALL: ${SKIP_INSTALL:-false}
     container_name: splitbuddy_backend_test
     ports:
-      - '5901:5900'  # Different port for testing
+      - '5901:5900'  # Different port to avoid conflict with production
     env_file:
       - .env.test
     depends_on:
@@ -35,7 +35,7 @@ services:
       - postgres_data_test:/var/lib/postgresql/data
       - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql
     ports:
-      - '5434:5432'  # Different port for testing
+      - '5434:5432'  # Different port to avoid conflict with production
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U splitbuddy_user_test -d splitbuddy_test"]
@@ -51,7 +51,7 @@ services:
     env_file:
       - .env.test
     ports:
-      - '6380:6379'  # Different port for testing
+      - '6380:6379'  # Different port to avoid conflict with production
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

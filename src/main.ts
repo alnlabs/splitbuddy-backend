@@ -9,7 +9,14 @@ logEnvironment();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api/v1');
+
+  // Set global prefix based on environment
+  const isTestEnv =
+    process.env.NODE_ENV === 'test' || process.env.CURRENT_ENV === 'test';
+  const globalPrefix = isTestEnv ? 'api/test' : 'api/v1';
+  app.setGlobalPrefix(globalPrefix);
+
+  console.log(`🚀 Starting SplitBuddy API with prefix: /${globalPrefix}`);
 
   // Enable CORS
   app.enableCors({
@@ -63,12 +70,14 @@ async function bootstrap() {
 
       ## Environment
       - **Development**: http://localhost:5900
-      - **Production**: https://api.splitbuddyapp.com
+      - **Test**: https://api.splitbuddyapp.com/api/test
+      - **Production**: https://api.splitbuddyapp.com/api/v1
     `,
     )
     .setVersion('1.0')
     .addServer('http://localhost:5900', 'Local Development')
-    .addServer('https://api.splitbuddyapp.com', 'Production')
+    .addServer('https://api.splitbuddyapp.com/api/test', 'Test Environment')
+    .addServer('https://api.splitbuddyapp.com/api/v1', 'Production Environment')
     .addBearerAuth(
       {
         type: 'http',

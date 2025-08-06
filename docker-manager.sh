@@ -47,6 +47,7 @@ show_help() {
     echo "  local       - Development environment (docker-compose.local.yml)"
     echo "  test        - Testing environment (docker-compose.test.yml)"
     echo "  prod        - Production environment (docker-compose.prod.yml)"
+    echo "  both        - Both test and production environments"
     echo ""
     echo "ACTIONS:"
     echo "  up          - Start the environment"
@@ -62,6 +63,7 @@ show_help() {
     echo "  $0 local up          # Start local development environment"
     echo "  $0 test build        # Build and start test environment"
     echo "  $0 prod status       # Check production environment status"
+    echo "  $0 both up           # Start both test and production environments"
     echo "  $0 local clean       # Clean up local environment"
     echo ""
 }
@@ -77,6 +79,9 @@ get_compose_file() {
             ;;
         prod)
             echo "docker-compose.prod.yml"
+            ;;
+        both)
+            echo "both"
             ;;
         *)
             print_error "Invalid environment: $1"
@@ -100,6 +105,13 @@ test_api() {
             ;;
         prod)
             port=5900
+            ;;
+        both)
+            print_header "Testing API Endpoints for both environments"
+            test_api "test"
+            echo ""
+            test_api "prod"
+            return
             ;;
     esac
 
@@ -158,38 +170,96 @@ main() {
 
     case $action in
         up)
-            print_status "Starting $environment environment..."
-            docker-compose -f "$compose_file" up -d
-            print_status "Environment started! 🚀"
+            if [ "$compose_file" = "both" ]; then
+                print_status "Starting both test and production environments..."
+                docker-compose -f docker-compose.test.yml up -d
+                docker-compose -f docker-compose.prod.yml up -d
+                print_status "Both environments started! 🚀"
+            else
+                print_status "Starting $environment environment..."
+                docker-compose -f "$compose_file" up -d
+                print_status "Environment started! 🚀"
+            fi
             ;;
         down)
-            print_status "Stopping $environment environment..."
-            docker-compose -f "$compose_file" down
-            print_status "Environment stopped! 🛑"
+            if [ "$compose_file" = "both" ]; then
+                print_status "Stopping both test and production environments..."
+                docker-compose -f docker-compose.test.yml down
+                docker-compose -f docker-compose.prod.yml down
+                print_status "Both environments stopped! 🛑"
+            else
+                print_status "Stopping $environment environment..."
+                docker-compose -f "$compose_file" down
+                print_status "Environment stopped! 🛑"
+            fi
             ;;
         restart)
-            print_status "Restarting $environment environment..."
-            docker-compose -f "$compose_file" down
-            docker-compose -f "$compose_file" up -d
-            print_status "Environment restarted! 🔄"
+            if [ "$compose_file" = "both" ]; then
+                print_status "Restarting both test and production environments..."
+                docker-compose -f docker-compose.test.yml down
+                docker-compose -f docker-compose.prod.yml down
+                docker-compose -f docker-compose.test.yml up -d
+                docker-compose -f docker-compose.prod.yml up -d
+                print_status "Both environments restarted! 🔄"
+            else
+                print_status "Restarting $environment environment..."
+                docker-compose -f "$compose_file" down
+                docker-compose -f "$compose_file" up -d
+                print_status "Environment restarted! 🔄"
+            fi
             ;;
         logs)
-            print_status "Showing logs for $environment environment..."
-            docker-compose -f "$compose_file" logs -f
+            if [ "$compose_file" = "both" ]; then
+                print_status "Showing logs for both environments..."
+                echo "=== TEST ENVIRONMENT LOGS ==="
+                docker-compose -f docker-compose.test.yml logs -f &
+                TEST_PID=$!
+                echo "=== PRODUCTION ENVIRONMENT LOGS ==="
+                docker-compose -f docker-compose.prod.yml logs -f &
+                PROD_PID=$!
+                # Wait for both processes
+                wait $TEST_PID $PROD_PID
+            else
+                print_status "Showing logs for $environment environment..."
+                docker-compose -f "$compose_file" logs -f
+            fi
             ;;
         status)
-            print_status "Status of $environment environment:"
-            docker-compose -f "$compose_file" ps
+            if [ "$compose_file" = "both" ]; then
+                print_status "Status of both environments:"
+                echo "=== TEST ENVIRONMENT ==="
+                docker-compose -f docker-compose.test.yml ps
+                echo ""
+                echo "=== PRODUCTION ENVIRONMENT ==="
+                docker-compose -f docker-compose.prod.yml ps
+            else
+                print_status "Status of $environment environment:"
+                docker-compose -f "$compose_file" ps
+            fi
             ;;
         clean)
-            print_warning "Cleaning up $environment environment (this will remove all data)..."
-            docker-compose -f "$compose_file" down -v --remove-orphans
-            print_status "Environment cleaned! 🧹"
+            if [ "$compose_file" = "both" ]; then
+                print_warning "Cleaning up both environments (this will remove all data)..."
+                docker-compose -f docker-compose.test.yml down -v --remove-orphans
+                docker-compose -f docker-compose.prod.yml down -v --remove-orphans
+                print_status "Both environments cleaned! 🧹"
+            else
+                print_warning "Cleaning up $environment environment (this will remove all data)..."
+                docker-compose -f "$compose_file" down -v --remove-orphans
+                print_status "Environment cleaned! 🧹"
+            fi
             ;;
         build)
-            print_status "Building and starting $environment environment..."
-            docker-compose -f "$compose_file" up --build -d
-            print_status "Environment built and started! 🏗️"
+            if [ "$compose_file" = "both" ]; then
+                print_status "Building and starting both environments..."
+                docker-compose -f docker-compose.test.yml up --build -d
+                docker-compose -f docker-compose.prod.yml up --build -d
+                print_status "Both environments built and started! 🏗️"
+            else
+                print_status "Building and starting $environment environment..."
+                docker-compose -f "$compose_file" up --build -d
+                print_status "Environment built and started! 🏗️"
+            fi
             ;;
         test-api)
             test_api "$environment"
