@@ -29,6 +29,8 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: splitbuddy_postgres_test
+    env_file:
+      - .env.test
     environment:
       - POSTGRES_DB=${DB_DATABASE:-splitbuddy_test}
       - POSTGRES_USER=${DB_USERNAME:-splitbuddy_user_test}
@@ -50,6 +52,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: splitbuddy_redis_test
+    env_file:
+      - .env.test
     ports:
       - '6380:6379'  # Different port for testing
     restart: unless-stopped
