@@ -25,8 +25,17 @@ export class PaymentMethodService {
     return this.paymentMethodRepo.findOne({ where: { id } });
   }
 
-  async list() {
-    return this.paymentMethodRepo.find({ order: { name: 'ASC' } });
+  async list(userId?: string) {
+    if (userId) {
+      // Return user-specific payment methods
+      return this.paymentMethodRepo.find({
+        where: { authorId: userId },
+        order: { name: 'ASC' },
+      });
+    } else {
+      // Return all payment methods (for admin purposes)
+      return this.paymentMethodRepo.find({ order: { name: 'ASC' } });
+    }
   }
 
   async update(id: string, dto: any) {
