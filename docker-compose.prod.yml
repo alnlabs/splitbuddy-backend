@@ -12,11 +12,13 @@ services:
     env_file:
       - .env.prod
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:5900/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:5900/api/v1/db-test']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -25,10 +27,8 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: splitbuddy_postgres_prod
-    environment:
-      - POSTGRES_DB=${DB_DATABASE:-splitbuddy_prod}
-      - POSTGRES_USER=${DB_USERNAME:-splitbuddy_user_prod}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-SplitBuddy2024!Secure}
+    env_file:
+      - .env.prod
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
       - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql
@@ -36,7 +36,7 @@ services:
       - '5433:5432' # Changed from 5432:5432 to avoid conflict
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-splitbuddy_user_prod} -d ${DB_DATABASE:-splitbuddy_prod}"]
+      test: ["CMD-SHELL", "pg_isready -U splitbuddy_user_prod -d splitbuddy_prod"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -44,6 +44,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: splitbuddy_redis_prod
+    env_file:
+      - .env.prod
     ports:
       - '6379:6379'
     restart: unless-stopped
