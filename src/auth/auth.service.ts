@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { OAuth2Client } from 'google-auth-library';
 import { NotificationService } from '../notification/notification.service';
+import { DefaultDataService } from '../services/default-data.service';
 import { env } from '../config/env.config';
 
 // DTOs
@@ -37,6 +38,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly notificationService: NotificationService,
+    private readonly defaultDataService: DefaultDataService,
   ) {
     this.googleClient = new OAuth2Client(env.google.clientId);
   }
@@ -100,6 +102,15 @@ export class AuthService {
     });
 
     const savedUser = await this.userRepository.save(user);
+
+    // Create default data for the new user
+    try {
+      await this.defaultDataService.createDefaultDataForUser(savedUser.id);
+      console.log(`✅ Default data created for new user: ${savedUser.email}`);
+    } catch (error) {
+      console.error(`❌ Failed to create default data for user ${savedUser.email}:`, error);
+      // Don't fail registration if default data creation fails
+    }
 
     // Generate JWT token
     const payload = { email: savedUser.email, sub: savedUser.id };
@@ -170,6 +181,15 @@ export class AuthService {
           loginType: 'GOOGLE',
         });
         user = await this.userRepository.save(user);
+
+        // Create default data for new Google login user
+        try {
+          await this.defaultDataService.createDefaultDataForUser(user.id);
+          console.log(`✅ Default data created for new Google login user: ${user.email}`);
+        } catch (error) {
+          console.error(`❌ Failed to create default data for Google login user ${user.email}:`, error);
+          // Don't fail login if default data creation fails
+        }
       }
 
       const jwtPayload = { email: user.email, sub: user.id };
@@ -352,6 +372,15 @@ export class AuthService {
     });
 
     const savedUser = await this.userRepository.save(user);
+
+    // Create default data for the new user
+    try {
+      await this.defaultDataService.createDefaultDataForUser(savedUser.id);
+      console.log(`✅ Default data created for new Google user: ${savedUser.email}`);
+    } catch (error) {
+      console.error(`❌ Failed to create default data for Google user ${savedUser.email}:`, error);
+      // Don't fail registration if default data creation fails
+    }
 
     // Generate JWT token
     const jwtPayload = { email: savedUser.email, sub: savedUser.id };
