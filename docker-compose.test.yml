@@ -31,10 +31,6 @@ services:
     container_name: splitbuddy_postgres_test
     env_file:
       - .env.test
-    environment:
-      - POSTGRES_DB=${DB_DATABASE:-splitbuddy_test}
-      - POSTGRES_USER=${DB_USERNAME:-splitbuddy_user_test}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-SplitBuddy2024!Test}
     volumes:
       - postgres_data_test:/var/lib/postgresql/data
       - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql
@@ -42,7 +38,7 @@ services:
       - '5434:5432'  # Different port for testing
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-splitbuddy_user_test} -d ${DB_DATABASE:-splitbuddy_test}"]
+      test: ["CMD-SHELL", "pg_isready -U splitbuddy_user_test -d splitbuddy_test"]
       interval: 30s
       timeout: 10s
       retries: 5
