@@ -10,6 +10,7 @@ import { GroupModule } from './group/group.module';
 import { GroupMemberModule } from './group-member/group-member.module';
 import { UserSettingsModule } from './user-settings/user-settings.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { LoanModule } from './loan/loan.module';
 import { DefaultDataModule } from './services/default-data.module';
 import { UserModule } from './user/user.module';
 import { PlansModule } from './plans/plans.module';
@@ -38,6 +39,7 @@ const imports = [
   GroupMemberModule,
   UserSettingsModule,
   TransactionModule,
+  LoanModule,
   DefaultDataModule,
   UserModule,
   PlansModule,

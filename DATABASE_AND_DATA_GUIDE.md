@@ -14,6 +14,7 @@ The SplitBuddy backend uses **PostgreSQL** with **TypeORM** for database managem
 ## 🏗️ **Database Architecture**
 
 ### **Tables Created by Migrations:**
+
 1. **Users** - User accounts and authentication
 2. **UserGroups** - Expense sharing groups
 3. **UserGroupMembers** - Group membership
@@ -37,6 +38,7 @@ The SplitBuddy backend uses **PostgreSQL** with **TypeORM** for database managem
 ### **What Happens During Deployment:**
 
 #### 1. **Database Creation** (`setup_db.sql`)
+
 ```sql
 -- Creates database users and databases automatically
 CREATE ROLE splitbuddy_user_prod LOGIN PASSWORD 'your-password';
@@ -45,12 +47,14 @@ GRANT ALL PRIVILEGES ON DATABASE splitbuddy_prod TO splitbuddy_user_prod;
 ```
 
 #### 2. **Schema Migration** (TypeORM Migrations)
+
 ```bash
 # Runs automatically during deployment
 npm run migration:run
 ```
 
 **Migration Files:**
+
 - `1700000000000-CreateUsersTable.ts`
 - `1700000000001-CreateUserGroupsTable.ts`
 - `1700000000002-CreateCategoriesAndPaymentMethodsTable.ts`
@@ -65,12 +69,14 @@ npm run migration:run
 - `1754311016000-FixUserSettingsTable.ts`
 
 #### 3. **Default Data Creation** (`create-default-data.ts`)
+
 ```bash
 # Runs automatically after migrations
 npm run create-default-data
 ```
 
 **Creates for each user:**
+
 - **10 Payment Methods**: Cash, Credit Card, Debit Card, Bank Transfer, UPI, PayPal, Venmo, Apple Pay, Google Pay, Check
 - **17 Categories**: Food & Dining, Transportation, Shopping, Entertainment, Healthcare, Utilities, Rent/Mortgage, Insurance, Education, Travel, Gifts, Personal Care, Home & Garden, Business, Investment, Taxes, Other
 
@@ -79,6 +85,7 @@ npm run create-default-data
 ## 💾 **Data Persistence**
 
 ### **Docker Volumes**
+
 ```yaml
 # docker-compose.prod.yml
 volumes:
@@ -86,6 +93,7 @@ volumes:
 ```
 
 **Your data is stored in:**
+
 - **Database**: `postgres_data_prod` Docker volume
 - **Redis**: In-memory (resets on restart)
 - **Application**: Stateless (no persistent data)
@@ -93,6 +101,7 @@ volumes:
 ### **Data Backup & Restore**
 
 #### **Backup Database:**
+
 ```bash
 # Create backup
 docker-compose -f docker-compose.prod.yml exec postgres pg_dump -U splitbuddy_user_prod splitbuddy_prod > backup.sql
@@ -102,6 +111,7 @@ docker run --rm -v splitbuddy_backend_postgres_data_prod:/data -v $(pwd):/backup
 ```
 
 #### **Restore Database:**
+
 ```bash
 # Restore from SQL backup
 docker-compose -f docker-compose.prod.yml exec -T postgres psql -U splitbuddy_user_prod splitbuddy_prod < backup.sql
@@ -115,6 +125,7 @@ docker run --rm -v splitbuddy_backend_postgres_data_prod:/data -v $(pwd):/backup
 ## 🔧 **Manual Database Operations**
 
 ### **Access Database:**
+
 ```bash
 # Connect to PostgreSQL
 docker-compose -f docker-compose.prod.yml exec postgres psql -U splitbuddy_user_prod -d splitbuddy_prod
@@ -124,6 +135,7 @@ psql -h localhost -p 5433 -U splitbuddy_user_prod -d splitbuddy_prod
 ```
 
 ### **Run Migrations Manually:**
+
 ```bash
 # Run migrations
 docker-compose -f docker-compose.prod.yml exec backend npm run migration:run
@@ -136,6 +148,7 @@ docker-compose -f docker-compose.prod.yml exec backend npm run migration:revert
 ```
 
 ### **Create Default Data Manually:**
+
 ```bash
 # Create default data for all users
 docker-compose -f docker-compose.prod.yml exec backend npm run create-default-data
@@ -149,6 +162,7 @@ docker-compose -f docker-compose.prod.yml exec backend npx ts-node src/scripts/c
 ## 📊 **Database Monitoring**
 
 ### **Check Database Status:**
+
 ```bash
 # Check if database is running
 docker-compose -f docker-compose.prod.yml exec postgres pg_isready -U splitbuddy_user_prod
@@ -158,17 +172,18 @@ docker-compose -f docker-compose.prod.yml exec postgres psql -U splitbuddy_user_
 
 # Check table sizes
 docker-compose -f docker-compose.prod.yml exec postgres psql -U splitbuddy_user_prod -d splitbuddy_prod -c "
-SELECT 
+SELECT
     schemaname,
     tablename,
     pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
-FROM pg_tables 
+FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 "
 ```
 
 ### **Check Migration Status:**
+
 ```bash
 # View migration table
 docker-compose -f docker-compose.prod.yml exec postgres psql -U splitbuddy_user_prod -d splitbuddy_prod -c "SELECT * FROM migrations ORDER BY timestamp;"
@@ -179,6 +194,7 @@ docker-compose -f docker-compose.prod.yml exec postgres psql -U splitbuddy_user_
 ## 🔄 **Data Reset & Cleanup**
 
 ### **Reset Everything (DANGER - Deletes All Data):**
+
 ```bash
 # Stop containers and remove volumes
 docker-compose -f docker-compose.prod.yml down -v
@@ -188,6 +204,7 @@ docker-compose -f docker-compose.prod.yml down -v
 ```
 
 ### **Reset Only Database (Keep Volumes):**
+
 ```bash
 # Drop and recreate database
 docker-compose -f docker-compose.prod.yml exec postgres psql -U splitbuddy_user_prod -c "DROP DATABASE splitbuddy_prod;"
@@ -199,6 +216,7 @@ docker-compose -f docker-compose.prod.yml exec backend npm run create-default-da
 ```
 
 ### **Clear Specific Data:**
+
 ```bash
 # Clear all expenses (keep users and groups)
 docker-compose -f docker-compose.prod.yml exec postgres psql -U splitbuddy_user_prod -d splitbuddy_prod -c "DELETE FROM expense_splits; DELETE FROM expenses;"
@@ -212,6 +230,7 @@ docker-compose -f docker-compose.prod.yml exec postgres psql -U splitbuddy_user_
 ## 🛡️ **Data Security**
 
 ### **Environment Variables:**
+
 ```bash
 # Database credentials (set in .env)
 DB_USERNAME=splitbuddy_user_prod
@@ -220,12 +239,14 @@ DB_NAME=splitbuddy_prod
 ```
 
 ### **Connection Security:**
+
 - ✅ **Docker Network**: Database only accessible within Docker network
 - ✅ **No External Access**: Database not exposed to host by default
 - ✅ **Secure Passwords**: Auto-generated secure passwords
 - ✅ **SSL Ready**: Can enable SSL for production
 
 ### **Production Security:**
+
 ```bash
 # For production, consider:
 # 1. Change default passwords
@@ -240,12 +261,14 @@ DB_NAME=splitbuddy_prod
 ## 📈 **Scaling Considerations**
 
 ### **Current Setup (Development/Testing):**
+
 - ✅ Single PostgreSQL instance
 - ✅ Docker volumes for persistence
 - ✅ Automatic migrations
 - ✅ Default data creation
 
 ### **Production Scaling:**
+
 - 🔄 **External Database**: AWS RDS, Google Cloud SQL, Azure Database
 - 🔄 **Database Clustering**: Read replicas, connection pooling
 - 🔄 **Backup Strategy**: Automated backups, point-in-time recovery
