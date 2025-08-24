@@ -58,6 +58,31 @@ This will:
 ./simple-deploy.sh test
 ```
 
+## 🗄️ **Database Management**
+
+```bash
+# Check database status
+./db-manager.sh status
+
+# Connect to database
+./db-manager.sh connect
+
+# Create backup
+./db-manager.sh backup
+
+# Restore from backup
+./db-manager.sh restore backup.sql
+
+# Show table sizes
+./db-manager.sh tables
+
+# Show user statistics
+./db-manager.sh users
+
+# Reset database (DANGER)
+./db-manager.sh reset
+```
+
 ---
 
 ## 🔧 **Troubleshooting**

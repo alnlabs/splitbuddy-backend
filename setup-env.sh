@@ -120,7 +120,7 @@ main() {
 
     # Create environment file
     print_status "Creating environment file..."
-    
+
     cat > .env << EOF
 # SplitBuddy Backend Environment Configuration
 # Generated on $(date)

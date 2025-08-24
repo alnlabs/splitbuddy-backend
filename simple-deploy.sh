@@ -70,32 +70,32 @@ update_jwt_secret() {
 # Build and deploy
 deploy() {
     print_status "Building and deploying application..."
-    
+
     # Stop existing containers
     docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
-    
+
     # Build and start
     docker-compose -f docker-compose.prod.yml up --build -d
-    
+
     # Wait for services
     print_status "Waiting for services to start..."
     sleep 30
-    
+
     # Run migrations
     print_status "Running database migrations..."
     docker-compose -f docker-compose.prod.yml exec -T backend npm run migration:run || true
-    
+
     # Create default data
     print_status "Creating default data..."
     docker-compose -f docker-compose.prod.yml exec -T backend npm run create-default-data || true
-    
+
     print_success "Deployment completed!"
 }
 
 # Check status
 status() {
     print_status "Checking application status..."
-    
+
     if docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
         print_success "Application is running"
         docker-compose -f docker-compose.prod.yml ps
@@ -127,24 +127,24 @@ logs() {
 # Test application
 test() {
     print_status "Testing application..."
-    
+
     # Wait a moment for services to be ready
     sleep 5
-    
+
     # Test database connection
     if curl -f http://localhost:5900/api/v1/db-test >/dev/null 2>&1; then
         print_success "Database connection: OK"
     else
         print_warning "Database connection: Failed"
     fi
-    
+
     # Test API documentation
     if curl -f http://localhost:5900/api/docs >/dev/null 2>&1; then
         print_success "API documentation: OK"
     else
         print_warning "API documentation: Failed"
     fi
-    
+
     print_status "Application URLs:"
     echo "  API: http://localhost:5900"
     echo "  Docs: http://localhost:5900/api/docs"
