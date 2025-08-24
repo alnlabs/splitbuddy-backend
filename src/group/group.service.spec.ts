@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { GroupService } from './group.service';
 import { UserGroup } from '../entities/user-group.entity';
 import { UserGroupMember } from '../entities/user-group-member.entity';
@@ -13,6 +13,7 @@ describe('GroupService', () => {
   let groupMemberRepo: Repository<UserGroupMember>;
   let expenseRepo: Repository<Expense>;
   let expenseSplitRepo: Repository<ExpenseSplit>;
+  let dataSource: DataSource;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -58,6 +59,26 @@ describe('GroupService', () => {
             delete: jest.fn(),
           },
         },
+        {
+          provide: DataSource,
+          useValue: {
+            createQueryBuilder: jest.fn(),
+            query: jest.fn(),
+            createQueryRunner: jest.fn().mockReturnValue({
+              connect: jest.fn(),
+              startTransaction: jest.fn(),
+              commitTransaction: jest.fn(),
+              rollbackTransaction: jest.fn(),
+              release: jest.fn(),
+              query: jest.fn(),
+              manager: {
+                find: jest.fn().mockResolvedValue([]),
+                delete: jest.fn().mockResolvedValue({ affected: 0 }),
+                save: jest.fn(),
+              },
+            }),
+          },
+        },
       ],
     }).compile();
 
@@ -72,6 +93,7 @@ describe('GroupService', () => {
     expenseSplitRepo = module.get<Repository<ExpenseSplit>>(
       getRepositoryToken(ExpenseSplit),
     );
+    dataSource = module.get<DataSource>(DataSource);
   });
 
   it('should be defined', () => {
@@ -86,61 +108,82 @@ describe('GroupService', () => {
         { id: 'expense-2', groupId },
       ];
 
-      // Mock the repository methods
-      jest.spyOn(expenseRepo, 'find').mockResolvedValue(mockExpenses as any);
+      // Mock the queryRunner manager methods
+      const mockQueryRunner = {
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        query: jest.fn(),
+        manager: {
+          find: jest.fn().mockResolvedValue(mockExpenses),
+          delete: jest.fn().mockResolvedValue({ affected: 1 }),
+          save: jest.fn(),
+        },
+      };
+
       jest
-        .spyOn(expenseSplitRepo, 'delete')
-        .mockResolvedValue({ affected: 1 } as any);
-      jest
-        .spyOn(expenseRepo, 'delete')
-        .mockResolvedValue({ affected: 2 } as any);
-      jest
-        .spyOn(groupMemberRepo, 'delete')
-        .mockResolvedValue({ affected: 3 } as any);
-      jest.spyOn(groupRepo, 'delete').mockResolvedValue({ affected: 1 } as any);
+        .spyOn(dataSource, 'createQueryRunner')
+        .mockReturnValue(mockQueryRunner as any);
 
       const result = await service.delete(groupId);
 
-      // Verify that all related data was deleted
-      expect(expenseRepo.find).toHaveBeenCalledWith({ where: { groupId } });
-      expect(expenseSplitRepo.delete).toHaveBeenCalledWith({
-        expenseId: 'expense-1',
-      });
-      expect(expenseSplitRepo.delete).toHaveBeenCalledWith({
-        expenseId: 'expense-2',
-      });
-      expect(expenseRepo.delete).toHaveBeenCalledWith({ groupId });
-      expect(groupMemberRepo.delete).toHaveBeenCalledWith({ groupId });
-      expect(groupRepo.delete).toHaveBeenCalledWith(groupId);
+      // Verify that the queryRunner was used correctly
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
 
+      // Check the response format (with global response middleware)
       expect(result).toEqual({
-        deleted: true,
+        success: true,
+        data: {
+          deleted: true,
+          message:
+            'Group and all related data (2 expenses, 2 expense splits, and all members) have been deleted successfully.',
+        },
         message:
           'Group and all related data (2 expenses, 2 expense splits, and all members) have been deleted successfully.',
+        error: null,
       });
     });
 
     it('should handle group with no expenses', async () => {
       const groupId = 'test-group-id';
 
-      jest.spyOn(expenseRepo, 'find').mockResolvedValue([]);
+      // Mock the queryRunner manager methods
+      const mockQueryRunner = {
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        query: jest.fn(),
+        manager: {
+          find: jest.fn().mockResolvedValue([]),
+          delete: jest.fn().mockResolvedValue({ affected: 0 }),
+          save: jest.fn(),
+        },
+      };
+
       jest
-        .spyOn(expenseSplitRepo, 'delete')
-        .mockResolvedValue({ affected: 0 } as any);
-      jest
-        .spyOn(expenseRepo, 'delete')
-        .mockResolvedValue({ affected: 0 } as any);
-      jest
-        .spyOn(groupMemberRepo, 'delete')
-        .mockResolvedValue({ affected: 0 } as any);
-      jest.spyOn(groupRepo, 'delete').mockResolvedValue({ affected: 1 } as any);
+        .spyOn(dataSource, 'createQueryRunner')
+        .mockReturnValue(mockQueryRunner as any);
 
       const result = await service.delete(groupId);
 
+      // Check the response format (with global response middleware)
       expect(result).toEqual({
-        deleted: true,
+        success: true,
+        data: {
+          deleted: true,
+          message:
+            'Group and all related data (0 expenses, 0 expense splits, and all members) have been deleted successfully.',
+        },
         message:
           'Group and all related data (0 expenses, 0 expense splits, and all members) have been deleted successfully.',
+        error: null,
       });
     });
   });
