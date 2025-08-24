@@ -108,7 +108,10 @@ export class AuthService {
       await this.defaultDataService.createDefaultDataForUser(savedUser.id);
       console.log(`✅ Default data created for new user: ${savedUser.email}`);
     } catch (error) {
-      console.error(`❌ Failed to create default data for user ${savedUser.email}:`, error);
+      console.error(
+        `❌ Failed to create default data for user ${savedUser.email}:`,
+        error,
+      );
       // Don't fail registration if default data creation fails
     }
 
@@ -185,9 +188,14 @@ export class AuthService {
         // Create default data for new Google login user
         try {
           await this.defaultDataService.createDefaultDataForUser(user.id);
-          console.log(`✅ Default data created for new Google login user: ${user.email}`);
+          console.log(
+            `✅ Default data created for new Google login user: ${user.email}`,
+          );
         } catch (error) {
-          console.error(`❌ Failed to create default data for Google login user ${user.email}:`, error);
+          console.error(
+            `❌ Failed to create default data for Google login user ${user.email}:`,
+            error,
+          );
           // Don't fail login if default data creation fails
         }
       }
@@ -376,9 +384,14 @@ export class AuthService {
     // Create default data for the new user
     try {
       await this.defaultDataService.createDefaultDataForUser(savedUser.id);
-      console.log(`✅ Default data created for new Google user: ${savedUser.email}`);
+      console.log(
+        `✅ Default data created for new Google user: ${savedUser.email}`,
+      );
     } catch (error) {
-      console.error(`❌ Failed to create default data for Google user ${savedUser.email}:`, error);
+      console.error(
+        `❌ Failed to create default data for Google user ${savedUser.email}:`,
+        error,
+      );
       // Don't fail registration if default data creation fails
     }
 
