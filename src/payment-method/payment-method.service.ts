@@ -54,10 +54,20 @@ export class PaymentMethodService {
     // Notify payer and payee
     const content = `A payment of ${dto.amount} was recorded for group ${dto.groupId}.`;
     if (dto.payerId) {
-      await this.notificationService.sendInApp(dto.payerId, content);
+      try {
+        await this.notificationService.sendInApp(dto.payerId, content);
+      } catch (error) {
+        // Log error but don't fail the payment recording
+        console.error('Failed to send notification to payer:', error);
+      }
     }
     if (dto.payeeId) {
-      await this.notificationService.sendInApp(dto.payeeId, content);
+      try {
+        await this.notificationService.sendInApp(dto.payeeId, content);
+      } catch (error) {
+        // Log error but don't fail the payment recording
+        console.error('Failed to send notification to payee:', error);
+      }
     }
     // Optionally, send emails if you have payer/payee emails
     return payment;
