@@ -47,11 +47,40 @@ export class ExpenseService {
     return this.expenseRepo.findOne({ where: { id } });
   }
 
-  async list(groupId?: string, userId?: string) {
+  async list(
+    groupId?: string,
+    userId?: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     const where: any = {};
     if (groupId) where.groupId = groupId;
     if (userId) where.addedBy = userId;
-    return this.expenseRepo.find({ where, order: { date: 'DESC' } });
+
+    // Ensure page and limit are within valid ranges
+    page = Math.max(1, page);
+    limit = Math.min(100, Math.max(1, limit));
+
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await this.expenseRepo.findAndCount({
+      where,
+      order: { date: 'DESC' },
+      skip,
+      take: limit,
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    };
   }
 
   async update(id: string, dto: any) {

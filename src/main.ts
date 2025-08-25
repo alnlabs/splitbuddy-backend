@@ -1,8 +1,49 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { globalResponseMiddleware } from './global-response.middleware';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { env, logEnvironment } from './config/env.config';
+import { ValidationPipe } from '@nestjs/common';
+import { swaggerConfig, swaggerCustomOptions } from './config/swagger.config';
+
+// Import all DTOs to ensure they are included in the Swagger schema
+import {
+  ApiResponse,
+  PaginatedResponse,
+  ApiError,
+  ValidationError,
+  SuccessResponse,
+  BulkOperationResponse,
+} from './common/dto';
+
+import {
+  RegisterRequestDto,
+  LoginRequestDto,
+  UpdateProfileRequestDto,
+  ChangePasswordRequestDto,
+  RequestPasswordResetRequestDto,
+  ResetPasswordRequestDto,
+  RequestEmailVerificationRequestDto,
+  GoogleAuthRequestDto,
+} from './auth/dto';
+
+import {
+  RegisterResponseDto,
+  LoginResponseDto,
+  ProfileResponseDto,
+  ProfileUpdateResponseDto,
+  PasswordChangeResponseDto,
+  PasswordResetRequestResponseDto,
+  PasswordResetResponseDto,
+  EmailVerificationRequestResponseDto,
+  EmailVerificationResponseDto,
+  GoogleAuthResponseDto,
+  GoogleTokenVerificationResponseDto,
+  GoogleTokenVerificationDataDto,
+  LogoutResponseDto,
+  UserProfileResponseDto,
+  AuthResponseDto,
+} from './auth/dto';
 
 // Debug: Log environment variables
 logEnvironment();
@@ -17,6 +58,19 @@ async function bootstrap() {
   app.setGlobalPrefix(globalPrefix);
 
   console.log(`🚀 Starting SplitBuddy API with prefix: /${globalPrefix}`);
+
+  // Global validation pipe for enhanced DTOs
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      errorHttpStatusCode: 400,
+    }),
+  );
 
   // Enhanced CORS Configuration
   const corsOrigins = env.app.corsOrigin
@@ -102,88 +156,62 @@ async function bootstrap() {
     next();
   });
 
-  // Swagger setup
-  const config = new DocumentBuilder()
-    .setTitle('SplitBuddy API')
-    .setDescription(
-      `
-      # SplitBuddy Backend API Documentation
+  // Enhanced Swagger setup with comprehensive documentation
+  const document = SwaggerModule.createDocument(app, swaggerConfig, {
+    extraModels: [
+      // Common DTOs
+      ApiResponse,
+      PaginatedResponse,
+      ApiError,
+      ValidationError,
+      SuccessResponse,
+      BulkOperationResponse,
 
-      ## Overview
-      SplitBuddy is a comprehensive expense splitting and financial management API that allows users to:
-      - Create and manage expense groups
-      - Track expenses and split them among group members
-      - Manage categories and payment methods
-      - Handle user authentication and profiles
-      - Send notifications and reminders
+      // Auth Request DTOs
+      RegisterRequestDto,
+      LoginRequestDto,
+      UpdateProfileRequestDto,
+      ChangePasswordRequestDto,
+      RequestPasswordResetRequestDto,
+      ResetPasswordRequestDto,
+      RequestEmailVerificationRequestDto,
+      GoogleAuthRequestDto,
 
-      ## Authentication
-      Most endpoints require Bearer token authentication. Include your JWT token in the Authorization header:
-      \`Authorization: Bearer <your-token>\`
-
-      ## Getting Started
-      1. Register a new user using \`POST /auth/register\`
-      2. Login to get your JWT token using \`POST /auth/login\`
-      3. Use the token to access protected endpoints
-
-      ## Features
-      - **Authentication**: JWT-based auth with Google OAuth support
-      - **Expense Management**: Create, update, delete, and split expenses
-      - **Group Management**: Create groups and manage members
-      - **Categories & Payment Methods**: Organize expenses by categories and payment methods
-      - **Balance Tracking**: Track who owes what to whom
-      - **Notifications**: Email and in-app notifications
-      - **Bulk Operations**: Create, update, and delete multiple records at once
-
-      ## Environment
-      - **Development**: http://localhost:5900
-      - **Test**: https://api.splitbuddyapp.com/api/test
-      - **Production**: https://api.splitbuddyapp.com/api/v1
-    `,
-    )
-    .setVersion('1.0')
-    .addServer('http://localhost:5900', 'Local Development')
-    .addServer('https://api.splitbuddyapp.com/api/test', 'Test Environment')
-    .addServer('https://api.splitbuddyapp.com/api/v1', 'Production Environment')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth',
-    )
-    .addTag(
-      'Authentication',
-      'User registration, login, and profile management',
-    )
-    .addTag('Expenses', 'Expense creation, management, and splitting')
-    .addTag('Groups', 'Group creation and management')
-    .addTag('Categories', 'Expense category management')
-    .addTag('Payment Methods', 'Payment method management')
-    .addTag('Notifications', 'Email and in-app notifications')
-    .addTag('User Settings', 'User preferences and settings')
-    .addTag('Transactions', 'Financial transaction management')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      docExpansion: 'none',
-      filter: true,
-      showRequestDuration: true,
-    },
-    customSiteTitle: 'SplitBuddy API Documentation',
-    customCss: `
-      .swagger-ui .topbar { display: none }
-      .swagger-ui .info .title { color: #2c3e50; font-size: 36px; }
-      .swagger-ui .info .description { font-size: 16px; line-height: 1.6; }
-    `,
+      // Auth Response DTOs
+      RegisterResponseDto,
+      LoginResponseDto,
+      ProfileResponseDto,
+      ProfileUpdateResponseDto,
+      PasswordChangeResponseDto,
+      PasswordResetRequestResponseDto,
+      PasswordResetResponseDto,
+      EmailVerificationRequestResponseDto,
+      EmailVerificationResponseDto,
+      GoogleAuthResponseDto,
+      GoogleTokenVerificationResponseDto,
+      GoogleTokenVerificationDataDto,
+      LogoutResponseDto,
+      UserProfileResponseDto,
+      AuthResponseDto,
+    ],
+    deepScanRoutes: true,
   });
+
+  // Setup Swagger UI and JSON endpoint
+  SwaggerModule.setup('api/docs', app, document, swaggerCustomOptions);
+
+  // Setup OpenAPI JSON endpoint for debugging (without global prefix)
+  app.use('/api-json', (req: any, res: any) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(document);
+  });
+
+  console.log(
+    `📚 Swagger documentation available at: http://localhost:${env.app.port}/api/docs`,
+  );
+  console.log(
+    `📄 OpenAPI JSON schema available at: http://localhost:${env.app.port}/api-json`,
+  );
 
   await app.listen(env.app.port, '0.0.0.0');
 }
