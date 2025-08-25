@@ -4,7 +4,41 @@ A robust, scalable, and extensible backend for collaborative and personal financ
 
 ---
 
-## **Key Features**
+## 🚀 **Quick Start (5 minutes)**
+
+### **Prerequisites**
+
+```bash
+# Install dependencies
+npm install
+
+# Install Doppler CLI (required for environment management)
+curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh
+doppler login
+```
+
+### **Setup & Deploy**
+
+```bash
+# 1. Set up Doppler environments
+./scripts/setup-doppler-environments.sh --project splitbuddy-backend
+
+# 2. Configure OAuth settings
+./scripts/update-oauth-configs.sh --env dev
+
+# 3. Deploy to development
+./scripts/deploy-with-doppler.sh --env dev
+```
+
+### **Access Your Application**
+
+- **API**: http://localhost:5900
+- **Documentation**: http://localhost:5900/api/docs
+- **Health Check**: http://localhost:5900/api/v1/db-test
+
+---
+
+## 🎯 **Key Features**
 
 ### **1. User Management & Authentication**
 
@@ -67,233 +101,57 @@ A robust, scalable, and extensible backend for collaborative and personal financ
 
 ---
 
-## **API Overview**
+## 🌍 **Environment Management**
 
-- `/api/v1/auth/*` — Authentication and user management
-- `/api/v1/expense/*` — Expense CRUD, splitting, settlement, bulk, reminders
-- `/api/v1/transaction/*` — Unified transaction CRUD and reporting
-- `/api/v1/notification/*` — Notification management and history
-- `/api/v1/user-settings/*` — User settings CRUD
-- `/api/v1/category`, `/api/v1/payment-method`, `/api/v1/group`, `/api/v1/group-member` — Related entity CRUD
+This project uses **Doppler** for secure environment variable management across all environments:
+
+- **Development** (`dev`) - Local development and testing
+- **Testing** (`test`) - Automated testing and staging
+- **Production** (`prod`) - Live production deployment
+
+### **Environment Commands**
+
+```bash
+# Deploy to different environments
+./scripts/deploy-with-doppler.sh --env dev    # Development
+./scripts/deploy-with-doppler.sh --env test   # Testing
+./scripts/deploy-with-doppler.sh --env prod   # Production
+
+# Simple deployment (uses production)
+./simple-deploy.sh deploy
+```
 
 ---
 
-## **Tech Stack**
+## 🔧 **Tech Stack**
 
 - **NestJS** (Node.js, TypeScript)
 - **TypeORM** (PostgreSQL)
 - **Bull/Redis** (queue-based notifications)
 - **class-validator** (validation)
-- **Docker Compose** (for local dev: Postgres, Redis)
+- **Docker Compose** (containerization)
+- **Doppler** (environment management)
 
 ---
 
-## **Quick Start**
+## 📚 **Documentation**
 
-### **Local Development**
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd splitbuddy-backend
-
-# Install dependencies
-npm install
-
-# Start local development environment
-./deploy.sh local-start
-
-# The application will be available at:
-# - API: http://localhost:5900
-# - Documentation: http://localhost:5900/api/docs
-# - Health Check: http://localhost:5900/api/v1/db-test
-```
-
-### **Production Deployment**
-
-```bash
-# Deploy to production (uses local Docker)
-./deploy.sh production
-
-# Deploy with GitHub secrets (recommended for production)
-./deploy.sh production -g
-
-# Fast deployment (skip dependency installation)
-./deploy.sh production -s
-
-# Combined: Fast deployment with GitHub secrets
-./deploy.sh production -s -g
-```
+- **[SETUP.md](SETUP.md)** - Complete setup guide for all environments
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment and operations guide
+- **API Documentation**: http://localhost:5900/api/docs (when running)
 
 ---
 
-## **Deployment Options**
+## 🚨 **Important Notes**
 
-### **1. Local Docker Deployment (Default)**
-
-Uses Docker Compose with local PostgreSQL and Redis containers:
-
-```bash
-./deploy.sh production
-```
-
-### **2. GitHub Secrets Integration (Recommended)**
-
-Store environment variables securely in GitHub repository secrets:
-
-```bash
-# Setup GitHub secrets
-./scripts/setup-github-secrets.sh
-
-# Deploy with GitHub secrets
-export GITHUB_TOKEN="your-personal-access-token"
-export GITHUB_REPO="your-username/splitbuddy-backend"
-./deploy.sh production -g
-```
-
-### **3. Manual Environment Setup**
-
-Create your own `.env.production` file:
-
-```bash
-# Copy and edit environment template
-cp env.production.example .env.production
-
-# Deploy with custom environment
-./deploy.sh production
-```
+- **No local `.env` files** - All environment variables managed through Doppler
+- **Docker-based deployment** - PostgreSQL and Redis run in containers
+- **Platform-specific OAuth** - Separate client IDs for web, Android, iOS
+- **Secure by default** - No sensitive data in version control
 
 ---
 
-## **Deployment Script Commands**
-
-```bash
-# Local Development
-./deploy.sh local-start    # Start local development
-./deploy.sh local-stop     # Stop local development
-./deploy.sh local          # Alias for local-start
-
-# Production Deployment
-./deploy.sh production     # Deploy to production
-./deploy.sh deploy         # Alias for production
-./deploy.sh prod           # Alias for production
-
-# Options
-./deploy.sh production -s  # Skip dependency installation
-./deploy.sh production -g  # Use GitHub secrets
-./deploy.sh production -s -g  # Both options
-
-# Management
-./deploy.sh restart        # Restart production
-./deploy.sh status         # Check application status
-./deploy.sh help           # Show help
-```
-
----
-
-## **Environment Variables**
-
-### **Required for Production**
-
-```bash
-# Database
-DB_HOST=postgres
-DB_PORT=5432
-DB_USERNAME=splitbuddy_user_prod
-DB_PASSWORD=your-secure-password
-DB_DATABASE=splitbuddy_prod
-
-# Redis
-REDIS_HOST=redis
-REDIS_PORT=6379
-
-# JWT
-JWT_SECRET=your-jwt-secret
-
-# SMTP (for email notifications)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SMTP_FROM=your-email@gmail.com
-
-# App
-APP_PORT=5900
-NODE_ENV=production
-```
-
----
-
-## **Security Features**
-
-- **JWT Authentication** for all protected endpoints
-- **GitHub Secrets Integration** for secure environment variable management
-- **Docker Containerization** for isolated deployment
-- **Database Migrations** for schema versioning
-- **Input Validation** with class-validator
-- **CORS Configuration** for web client security
-
----
-
-## **API Documentation**
-
-Once the application is running, visit:
-
-- **Swagger UI**: http://localhost:5900/api/docs
-- **Health Check**: http://localhost:5900/api/v1/db-test
-
----
-
-## **Development**
-
-### **Available Scripts**
-
-```bash
-npm run start:dev      # Start development server
-npm run build          # Build for production
-npm run test           # Run tests
-npm run migration:run  # Run database migrations
-npm run docker:dev     # Start Docker development environment
-npm run docker:down    # Stop Docker development environment
-```
-
-### **Database Migrations**
-
-```bash
-# Run migrations
-npm run migration:run
-
-# Create new migration
-npm run migration:generate -- -n MigrationName
-
-# Revert last migration
-npm run migration:revert
-```
-
----
-
-## **Troubleshooting**
-
-### **Common Issues**
-
-1. **Port already in use**: Stop existing containers with `./deploy.sh local-stop`
-2. **Database connection failed**: Check if PostgreSQL container is running
-3. **GitHub secrets not working**: Ensure `GITHUB_TOKEN` and `GITHUB_REPO` are set
-4. **Migration errors**: Run `docker-compose down -v` to reset database
-
-### **Logs**
-
-```bash
-# View application logs
-docker-compose -f docker-compose.prod.yml logs -f
-
-# View specific service logs
-docker-compose -f docker-compose.prod.yml logs -f app
-```
-
----
-
-## **Contributing**
+## 🤝 **Contributing**
 
 1. Fork the repository
 2. Create a feature branch

@@ -8,9 +8,65 @@ services:
         SKIP_INSTALL: ${SKIP_INSTALL:-false}
     container_name: splitbuddy_backend_test
     ports:
-      - '5900:5900' # Use same port as production since paths are different
-    env_file:
-      - .env.test
+      - '5901:5901'
+    environment:
+      # Test Environment Variables
+      NODE_ENV: test
+      APP_PORT: 5901
+      PORT: 5901
+
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: splitbuddy_user_test
+      DB_PASSWORD: SplitBuddy2024!Test
+      DB_NAME: splitbuddy_test
+      DB_DATABASE: splitbuddy_test
+
+      # PostgreSQL Container Variables
+      POSTGRES_DB: splitbuddy_test
+      POSTGRES_USER: splitbuddy_user_test
+      POSTGRES_PASSWORD: SplitBuddy2024!Test
+
+      # JWT Configuration
+      JWT_SECRET: test-jwt-secret-not-secure
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # SMTP Configuration
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: test-email@gmail.com
+      SMTP_PASS: test-app-password
+      SMTP_FROM: test-email@gmail.com
+
+      # Google OAuth Configuration - Web
+      GOOGLE_WEB_CLIENT_ID: test-web-client-id.apps.googleusercontent.com
+      GOOGLE_WEB_CALLBACK_URL: http://localhost:5901/api/v1/auth/google/callback
+
+      # Google OAuth Configuration - Android
+      GOOGLE_ANDROID_CLIENT_ID: test-android-client-id.apps.googleusercontent.com
+      GOOGLE_ANDROID_CALLBACK_URL: com.splitbuddy.app:/oauth2redirect
+
+      # Google OAuth Configuration - iOS
+      GOOGLE_IOS_CLIENT_ID: test-ios-client-id.apps.googleusercontent.com
+      GOOGLE_IOS_CALLBACK_URL: com.splitbuddy.app:/oauth2redirect
+
+      # Google OAuth Configuration - Shared
+      GOOGLE_CLIENT_SECRET: test-google-client-secret
+
+      # Google OAuth Configuration - Backward Compatibility
+      GOOGLE_CLIENT_ID: test-web-client-id.apps.googleusercontent.com
+      GOOGLE_CALLBACK_URL: http://localhost:5901/api/v1/auth/google/callback
+
+      # App Configuration
+      CORS_ORIGIN: http://localhost:3001
+
+      # Queue Configuration
+      EMAIL_QUEUE_NAME: email-queue-test
+      NOTIFICATION_QUEUE_NAME: notification-queue-test
     depends_on:
       postgres:
         condition: service_healthy
@@ -18,24 +74,24 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:5900/api/test/db-test']
+      test: ['CMD', 'curl', '-f', 'http://localhost:5901/api/test/db-test']
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - splitbuddy_test_network
 
   postgres:
     image: postgres:15-alpine
     container_name: splitbuddy_postgres_test
-    env_file:
-      - .env.test
+    environment:
+      POSTGRES_DB: splitbuddy_test
+      POSTGRES_USER: splitbuddy_user_test
+      POSTGRES_PASSWORD: SplitBuddy2024!Test
     volumes:
       - postgres_data_test:/var/lib/postgresql/data
       - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql
     ports:
-      - '5434:5432' # Different port to avoid conflict with production
+      - '5435:5432' # Different port to avoid conflicts
     restart: unless-stopped
     healthcheck:
       test:
@@ -43,49 +99,18 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    networks:
-      - splitbuddy_test_network
 
   redis:
     image: redis:7-alpine
     container_name: splitbuddy_redis_test
-    env_file:
-      - .env.test
     ports:
-      - '6381:6379' # Different port to avoid conflict with production
+      - '6381:6379' # Different port to avoid conflicts
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 30s
       timeout: 10s
       retries: 3
-    networks:
-      - splitbuddy_test_network
-
-  # Test runner service for automated testing
-  test-runner:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        SKIP_INSTALL: ${SKIP_INSTALL:-false}
-    container_name: splitbuddy_test_runner
-    env_file:
-      - .env.test
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: ['npm', 'run', 'test']
-    networks:
-      - splitbuddy_test_network
-    profiles:
-      - testing # Only run when explicitly requested
-
-networks:
-  splitbuddy_test_network:
-    driver: bridge
 
 volumes:
   postgres_data_test:
