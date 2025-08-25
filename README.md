@@ -88,150 +88,181 @@ A robust, scalable, and extensible backend for collaborative and personal financ
 
 ---
 
-## **Quick Start**
+## **🚀 Quick Start (5 Minutes)**
 
-### **Local Development**
-
+### **Prerequisites**
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd splitbuddy-backend
-
-# Install dependencies
+# Install Node.js dependencies
 npm install
 
-# Start local development environment
-./deploy.sh local-start
+# Install Doppler CLI (required for environment management)
+curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh
 
-# The application will be available at:
-# - API: http://localhost:5900
-# - Documentation: http://localhost:5900/api/docs
-# - Health Check: http://localhost:5900/api/v1/db-test
+# Login to Doppler
+doppler login
 ```
 
-### **Production Deployment**
+### **Setup & Deploy**
+
+#### **Option 1: Test Environment (Recommended for first-time setup)**
+```bash
+# Deploy test environment locally
+docker-compose -f docker-compose.test.yml up --build -d
+
+# Test the API
+curl http://localhost:5901/api/test/db-test
+```
+
+#### **Option 2: Production Environment**
+```bash
+# Deploy production environment
+./simple-deploy.sh deploy
+
+# Test the API
+curl http://localhost:5900/api/v1/db-test
+```
+
+### **Access Your Application**
+- **Test Environment**: http://localhost:5901
+- **Production Environment**: http://localhost:5900
+- **API Documentation**: http://localhost:5900/api/docs (or :5901 for test)
+
+---
+
+## **🌍 Environment Management**
+
+### **Current Setup: Docker-Based Services**
+
+The project uses **Docker containers** for all services:
+- **PostgreSQL**: Docker container (ports 5434/5435)
+- **Redis**: Docker container (ports 6379/6381)
+- **Backend**: Docker container (ports 5900/5901)
+
+### **Environment Options**
+
+#### **Test Environment** (Recommended for development)
+- Port: `5901`
+- Database: `splitbuddy_test`
+- API Prefix: `/api/test`
+- Configuration: Built into `docker-compose.test.yml`
+
+#### **Production Environment**
+- Port: `5900`
+- Database: `splitbuddy_prod`
+- API Prefix: `/api/v1`
+- Configuration: Uses Doppler environment variables
+
+### **Doppler Integration (Advanced)**
+
+For production deployments with secure environment management:
 
 ```bash
-# Deploy to production (uses local Docker)
-./deploy.sh production
+# Set up Doppler project and environments
+./scripts/setup-doppler-environments.sh --project splitbuddy-backend
 
-# Deploy with GitHub secrets (recommended for production)
-./deploy.sh production -g
+# Configure OAuth settings
+./scripts/update-oauth-configs.sh --env prod
 
-# Fast deployment (skip dependency installation)
-./deploy.sh production -s
-
-# Combined: Fast deployment with GitHub secrets
-./deploy.sh production -s -g
+# Deploy with Doppler
+./scripts/deploy-with-doppler.sh --env prod
 ```
 
 ---
 
-## **Deployment Options**
+## **🔧 Management Commands**
 
-### **1. Local Docker Deployment (Default)**
-
-Uses Docker Compose with local PostgreSQL and Redis containers:
-
+### **Test Environment**
 ```bash
-./deploy.sh production
+# Start test environment
+docker-compose -f docker-compose.test.yml up --build -d
+
+# Stop test environment
+docker-compose -f docker-compose.test.yml down
+
+# View logs
+docker-compose -f docker-compose.test.yml logs -f
+
+# Check status
+docker-compose -f docker-compose.test.yml ps
 ```
 
-### **2. GitHub Secrets Integration (Recommended)**
-
-Store environment variables securely in GitHub repository secrets:
-
+### **Production Environment**
 ```bash
-# Setup GitHub secrets
-./scripts/setup-github-secrets.sh
+# Deploy production
+./simple-deploy.sh deploy
 
-# Deploy with GitHub secrets
-export GITHUB_TOKEN="your-personal-access-token"
-export GITHUB_REPO="your-username/splitbuddy-backend"
-./deploy.sh production -g
-```
+# Stop production
+./simple-deploy.sh stop
 
-### **3. Manual Environment Setup**
+# Restart production
+./simple-deploy.sh restart
 
-Create your own `.env.production` file:
+# View logs
+./simple-deploy.sh logs
 
-```bash
-# Copy and edit environment template
-cp env.production.example .env.production
-
-# Deploy with custom environment
-./deploy.sh production
-```
-
----
-
-## **Deployment Script Commands**
-
-```bash
-# Local Development
-./deploy.sh local-start    # Start local development
-./deploy.sh local-stop     # Stop local development
-./deploy.sh local          # Alias for local-start
-
-# Production Deployment
-./deploy.sh production     # Deploy to production
-./deploy.sh deploy         # Alias for production
-./deploy.sh prod           # Alias for production
-
-# Options
-./deploy.sh production -s  # Skip dependency installation
-./deploy.sh production -g  # Use GitHub secrets
-./deploy.sh production -s -g  # Both options
-
-# Management
-./deploy.sh restart        # Restart production
-./deploy.sh status         # Check application status
-./deploy.sh help           # Show help
+# Check status
+./simple-deploy.sh status
 ```
 
 ---
 
-## **Environment Variables**
+## **🔐 Environment Variables**
 
-### **Required for Production**
+### **Test Environment** (Built into docker-compose.test.yml)
+All environment variables are pre-configured in the test environment:
+- Database: `splitbuddy_test`
+- Redis: `redis:6379`
+- JWT: Test secret
+- SMTP: Test configuration
+- OAuth: Test client IDs
+
+### **Production Environment** (Managed by Doppler)
+Environment variables are managed through Doppler for security:
 
 ```bash
-# Database
+# Database Configuration
 DB_HOST=postgres
 DB_PORT=5432
 DB_USERNAME=splitbuddy_user_prod
 DB_PASSWORD=your-secure-password
 DB_DATABASE=splitbuddy_prod
 
-# Redis
+# Redis Configuration
 REDIS_HOST=redis
 REDIS_PORT=6379
 
-# JWT
+# JWT Configuration
 JWT_SECRET=your-jwt-secret
 
-# SMTP (for email notifications)
+# SMTP Configuration
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 SMTP_FROM=your-email@gmail.com
 
-# App
+# Google OAuth Configuration
+GOOGLE_WEB_CLIENT_ID=your-web-client-id
+GOOGLE_ANDROID_CLIENT_ID=your-android-client-id
+GOOGLE_IOS_CLIENT_ID=your-ios-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+
+# App Configuration
 APP_PORT=5900
 NODE_ENV=production
 ```
 
 ---
 
-## **Security Features**
+## **🔒 Security Features**
 
 - **JWT Authentication** for all protected endpoints
-- **GitHub Secrets Integration** for secure environment variable management
+- **Doppler Integration** for secure environment variable management
 - **Docker Containerization** for isolated deployment
 - **Database Migrations** for schema versioning
 - **Input Validation** with class-validator
 - **CORS Configuration** for web client security
+- **Platform-Specific OAuth** for web, Android, and iOS
 
 ---
 
@@ -244,7 +275,7 @@ Once the application is running, visit:
 
 ---
 
-## **Development**
+## **🛠️ Development**
 
 ### **Available Scripts**
 
@@ -253,11 +284,10 @@ npm run start:dev      # Start development server
 npm run build          # Build for production
 npm run test           # Run tests
 npm run migration:run  # Run database migrations
-npm run docker:dev     # Start Docker development environment
-npm run docker:down    # Stop Docker development environment
+npm run create-default-data  # Create default data
 ```
 
-### **Database Migrations**
+### **Database Management**
 
 ```bash
 # Run migrations
@@ -268,27 +298,77 @@ npm run migration:generate -- -n MigrationName
 
 # Revert last migration
 npm run migration:revert
+
+# Create default data
+npm run create-default-data
+```
+
+### **Testing**
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests with coverage
+npm run test:cov
+
+# Run e2e tests
+npm run test:e2e
 ```
 
 ---
 
-## **Troubleshooting**
+## **🔧 Troubleshooting**
 
 ### **Common Issues**
 
-1. **Port already in use**: Stop existing containers with `./deploy.sh local-stop`
-2. **Database connection failed**: Check if PostgreSQL container is running
-3. **GitHub secrets not working**: Ensure `GITHUB_TOKEN` and `GITHUB_REPO` are set
-4. **Migration errors**: Run `docker-compose down -v` to reset database
+1. **Port already in use**: 
+   ```bash
+   # Check what's using the port
+   lsof -i :5900
+   lsof -i :5901
+   
+   # Stop existing containers
+   docker-compose -f docker-compose.test.yml down
+   docker-compose -f docker-compose.prod.yml down
+   ```
+
+2. **Database connection failed**: 
+   ```bash
+   # Check if containers are running
+   docker-compose -f docker-compose.test.yml ps
+   
+   # Restart containers
+   docker-compose -f docker-compose.test.yml restart
+   ```
+
+3. **Migration errors**: 
+   ```bash
+   # Reset database (WARNING: This will delete all data)
+   docker-compose -f docker-compose.test.yml down -v
+   docker-compose -f docker-compose.test.yml up --build -d
+   ```
+
+4. **Doppler not working**: 
+   ```bash
+   # Check Doppler installation
+   doppler --version
+   
+   # Login to Doppler
+   doppler login
+   ```
 
 ### **Logs**
 
 ```bash
-# View application logs
-docker-compose -f docker-compose.prod.yml logs -f
+# Test environment logs
+docker-compose -f docker-compose.test.yml logs -f
 
-# View specific service logs
-docker-compose -f docker-compose.prod.yml logs -f app
+# Production environment logs
+./simple-deploy.sh logs
+
+# Specific service logs
+docker-compose -f docker-compose.test.yml logs -f backend
 ```
 
 ---
@@ -300,6 +380,34 @@ docker-compose -f docker-compose.prod.yml logs -f app
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+---
+
+## **📁 Project Structure**
+
+```
+splitbuddy-backend/
+├── src/                    # Source code
+│   ├── auth/              # Authentication module
+│   ├── expense/           # Expense management
+│   ├── group/             # Group management
+│   ├── notification/      # Notification system
+│   ├── user-settings/     # User preferences
+│   └── entities/          # Database entities
+├── test/                  # Test files
+├── scripts/               # Deployment and setup scripts
+├── docker-compose.test.yml    # Test environment
+├── docker-compose.prod.yml    # Production environment
+├── simple-deploy.sh       # Simple deployment script
+└── README.md              # This file
+```
+
+## **📚 Additional Documentation**
+
+- **Doppler Setup**: `DOPPLER_SETUP.md` - Detailed Doppler configuration
+- **Testing Guide**: `TESTING_SETUP.md` - Comprehensive testing documentation
+- **API Testing**: `API_TEST_README.md` - API testing guide
+- **Database Guide**: `DATABASE_AND_DATA_GUIDE.md` - Database management
 
 ---
 
