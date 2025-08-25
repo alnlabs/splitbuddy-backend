@@ -7,6 +7,7 @@ A robust, scalable, and extensible backend for collaborative and personal financ
 ## 🚀 **Quick Start (5 minutes)**
 
 ### **Prerequisites**
+
 ```bash
 # Install dependencies
 npm install
@@ -17,6 +18,7 @@ doppler login
 ```
 
 ### **Setup & Deploy**
+
 ```bash
 # 1. Set up Doppler environments
 ./scripts/setup-doppler-environments.sh --project splitbuddy-backend
@@ -29,6 +31,7 @@ doppler login
 ```
 
 ### **Access Your Application**
+
 - **API**: http://localhost:5900
 - **Documentation**: http://localhost:5900/api/docs
 - **Health Check**: http://localhost:5900/api/v1/db-test
@@ -38,16 +41,19 @@ doppler login
 ## 🎯 **Key Features**
 
 ### **1. User Management & Authentication**
+
 - Secure registration, login, JWT authentication
 - Email verification, password reset, 2FA support
 - User profile management and permissions
 
 ### **2. Group & Family Management**
+
 - Create and manage groups (shared, personal, family)
 - Invite and manage group members
 - Permissions: Only group members can add/view group transactions
 
 ### **3. Unified Transaction System**
+
 - **Transaction entity** supports:
   - Expenses (personal, family, group)
   - Incomes (salary, gifts, etc.)
@@ -58,11 +64,13 @@ doppler login
 - Business rules and validation for each type
 
 ### **4. Expense Splitting & Settlement**
+
 - Split expenses among group members
 - Track who owes whom, settle splits, and record payments
 - Bulk operations: Add/update/delete multiple expenses at once
 
 ### **5. Notification System**
+
 - In-app and email notifications for:
   - Expense creation, update, deletion
   - Split assignment and settlement
@@ -72,6 +80,7 @@ doppler login
 - Notification history and audit
 
 ### **6. Reporting & Insights**
+
 - Endpoints for:
   - Income/expense summaries and net cash flow
   - Outstanding loans (given/taken)
@@ -80,10 +89,12 @@ doppler login
   - Group/family vs. personal summaries
 
 ### **7. User Settings**
+
 - User preferences for theme, language, currency, notifications, defaults, security, and more
 - Endpoints to get and update settings (web and mobile ready)
 
 ### **8. Advanced Features**
+
 - Permissions: Only owners can update/delete their transactions
 - Validation: DTOs and service checks for all business rules
 - Modular design: Easy to extend for new features (recurring, tags, etc.)
@@ -99,10 +110,11 @@ This project uses **Doppler** for secure environment variable management across 
 - **Production** (`prod`) - Live production deployment
 
 ### **Environment Commands**
+
 ```bash
 # Deploy to different environments
 ./scripts/deploy-with-doppler.sh --env dev    # Development
-./scripts/deploy-with-doppler.sh --env test   # Testing  
+./scripts/deploy-with-doppler.sh --env test   # Testing
 ./scripts/deploy-with-doppler.sh --env prod   # Production
 
 # Simple deployment (uses production)
