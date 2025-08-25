@@ -286,30 +286,31 @@ Use the provided script to easily manage environment variables:
 
 ### 📋 Complete Environment Variables List
 
-| Variable                  | Description                | Default Value                                       |
-| ------------------------- | -------------------------- | --------------------------------------------------- |
-| `DB_HOST`                 | Database host              | `localhost`                                         |
-| `DB_PORT`                 | Database port              | `5432`                                              |
-| `DB_USERNAME`             | Database username          | `postgres`                                          |
-| `DB_PASSWORD`             | Database password          | `postgres`                                          |
-| `DB_DATABASE`             | Database name              | `splitbuddy_db_local`                               |
-| `REDIS_HOST`              | Redis host                 | `localhost`                                         |
-| `REDIS_PORT`              | Redis port                 | `6379`                                              |
-| `JWT_SECRET`              | JWT signing secret         | `fallback-secret-key`                               |
-| `SMTP_HOST`               | SMTP server                | `smtp.gmail.com`                                    |
-| `SMTP_PORT`               | SMTP port                  | `587`                                               |
-| `SMTP_USER`               | SMTP username              | ``                                                  |
-| `SMTP_PASS`               | SMTP password              | ``                                                  |
-| `SMTP_FROM`               | From email address         | ``                                                  |
-| `GOOGLE_CLIENT_ID`        | Google OAuth client ID     | ``                                                  |
-| `GOOGLE_CLIENT_SECRET`    | Google OAuth client secret | ``                                                  |
-| `GOOGLE_CALLBACK_URL`     | Google OAuth callback URL  | `http://localhost:5900/api/v1/auth/google/callback` |
-| `APP_PORT`                | Application port           | `5900`                                              |
-| `PORT`                    | Alternative port variable  | `5900`                                              |
-| `NODE_ENV`                | Environment                | `development`                                       |
-| `CORS_ORIGIN`             | CORS allowed origins       | `http://localhost:3000`                             |
-| `EMAIL_QUEUE_NAME`        | Email queue name           | `email-queue`                                       |
-| `NOTIFICATION_QUEUE_NAME` | Notification queue name    | `notification-queue`                                |
+| Variable                   | Description                | Default Value                                       |
+| -------------------------- | -------------------------- | --------------------------------------------------- |
+| `DB_HOST`                  | Database host              | `localhost`                                         |
+| `DB_PORT`                  | Database port              | `5432`                                              |
+| `DB_USERNAME`              | Database username          | `postgres`                                          |
+| `DB_PASSWORD`              | Database password          | `postgres`                                          |
+| `DB_DATABASE`              | Database name              | `splitbuddy_db_local`                               |
+| `REDIS_HOST`               | Redis host                 | `localhost`                                         |
+| `REDIS_PORT`               | Redis port                 | `6379`                                              |
+| `JWT_SECRET`               | JWT signing secret         | `fallback-secret-key`                               |
+| `SMTP_HOST`                | SMTP server                | `smtp.gmail.com`                                    |
+| `SMTP_PORT`                | SMTP port                  | `587`                                               |
+| `SMTP_USER`                | SMTP username              | ``                                                  |
+| `SMTP_PASS`                | SMTP password              | ``                                                  |
+| `SMTP_FROM`                | From email address         | ``                                                  |
+| `GOOGLE_CLIENT_ID`         | Google OAuth client ID     | ``                                                  |
+| `GOOGLE_CLIENT_SECRET`     | Google OAuth client secret | ``                                                  |
+| `GOOGLE_CALLBACK_URL`      | Google OAuth callback URL  | `http://localhost:5900/api/v1/auth/google/callback` |
+| `GOOGLE_ANDROID_CLIENT_ID` | Google Android client ID   | ``                                                  |
+| `APP_PORT`                 | Application port           | `5900`                                              |
+| `PORT`                     | Alternative port variable  | `5900`                                              |
+| `NODE_ENV`                 | Environment                | `development`                                       |
+| `CORS_ORIGIN`              | CORS allowed origins       | `http://localhost:3000`                             |
+| `EMAIL_QUEUE_NAME`         | Email queue name           | `email-queue`                                       |
+| `NOTIFICATION_QUEUE_NAME`  | Notification queue name    | `notification-queue`                                |
 
 ### 🚀 Benefits of Centralized Configuration
 

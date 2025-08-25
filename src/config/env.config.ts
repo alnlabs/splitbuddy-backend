@@ -1,8 +1,8 @@
-import { config } from 'dotenv';
-import * as path from 'path';
+// Environment configuration for SplitBuddy Backend
+// Uses Doppler SDK for environment variable management
+// Falls back to process.env for local development
 
-// Load environment variables from .env file
-config({ path: path.resolve(process.cwd(), '.env') });
+import { DopplerService } from '../services/doppler.service';
 
 export interface EnvironmentConfig {
   // Database Configuration
@@ -47,6 +47,8 @@ export interface EnvironmentConfig {
     port: number;
     nodeEnv: string;
     corsOrigin: string;
+    corsCredentials: boolean;
+    corsMaxAge: number;
   };
 
   // Queue Configuration
@@ -56,75 +58,108 @@ export interface EnvironmentConfig {
   };
 }
 
-export const env: EnvironmentConfig = {
-  // Database Configuration
-  database: {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    username: process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_DATABASE || 'splitbuddy_db_local',
-  },
+// Create a function to get environment configuration with Doppler support
+export function createEnvironmentConfig(
+  dopplerService?: DopplerService,
+): EnvironmentConfig {
+  const getEnv = (key: string, fallback: string = ''): string => {
+    if (dopplerService && dopplerService.isDopplerAvailable()) {
+      return dopplerService.getSecret(key, fallback);
+    }
+    return process.env[key] || fallback;
+  };
 
-  // Redis Configuration
-  redis: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-  },
+  return {
+    // Database Configuration
+    database: {
+      host: getEnv('DB_HOST', 'localhost'),
+      port: parseInt(getEnv('DB_PORT', '5432')),
+      username: getEnv('DB_USERNAME', 'postgres'),
+      password: getEnv('DB_PASSWORD', 'postgres'),
+      database: getEnv('DB_DATABASE', 'splitbuddy_db_local'),
+    },
 
-  // JWT Configuration
-  jwt: {
-    secret: process.env.JWT_SECRET || 'fallback-secret-key',
-  },
+    // Redis Configuration
+    redis: {
+      host: getEnv('REDIS_HOST', 'localhost'),
+      port: parseInt(getEnv('REDIS_PORT', '6379')),
+    },
 
-  // SMTP Configuration
-  smtp: {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-    from: process.env.SMTP_FROM || '',
-  },
+    // JWT Configuration
+    jwt: {
+      secret: getEnv('JWT_SECRET', 'fallback-secret-key'),
+    },
 
-  // Google OAuth Configuration
-  google: {
-    clientId: process.env.GOOGLE_CLIENT_ID || '',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    callbackUrl:
-      process.env.GOOGLE_CALLBACK_URL ||
-      'http://localhost:5900/api/v1/auth/google/callback',
-    androidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID || '',
-  },
+    // SMTP Configuration
+    smtp: {
+      host: getEnv('SMTP_HOST', 'smtp.gmail.com'),
+      port: parseInt(getEnv('SMTP_PORT', '587')),
+      user: getEnv('SMTP_USER', ''),
+      pass: getEnv('SMTP_PASS', ''),
+      from: getEnv('SMTP_FROM', ''),
+    },
 
-  // App Configuration
-  app: {
-    port: parseInt(process.env.PORT || process.env.APP_PORT || '5900'),
-    nodeEnv: process.env.NODE_ENV || 'development',
-    corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  },
+    // Google OAuth Configuration
+    google: {
+      clientId: getEnv('GOOGLE_CLIENT_ID', ''),
+      clientSecret: getEnv('GOOGLE_CLIENT_SECRET', ''),
+      callbackUrl: getEnv(
+        'GOOGLE_CALLBACK_URL',
+        'http://localhost:5900/api/v1/auth/google/callback',
+      ),
+      androidClientId: getEnv('GOOGLE_ANDROID_CLIENT_ID', ''),
+    },
 
-  // Queue Configuration
-  queues: {
-    email: process.env.EMAIL_QUEUE_NAME || 'email-queue',
-    notification: process.env.NOTIFICATION_QUEUE_NAME || 'notification-queue',
-  },
-};
+    // App Configuration
+    app: {
+      port: parseInt(getEnv('PORT', getEnv('APP_PORT', '5900'))),
+      nodeEnv: getEnv('NODE_ENV', 'development'),
+      corsOrigin: getEnv(
+        'CORS_ORIGIN',
+        'http://localhost:3000,http://localhost:3001,http://localhost:8080,http://localhost:4700,http://localhost:5300,http://localhost:5400,http://localhost:5500,http://localhost:5600,http://localhost:5700',
+      ),
+      corsCredentials: getEnv('CORS_CREDENTIALS', 'false') === 'true',
+      corsMaxAge: parseInt(getEnv('CORS_MAX_AGE', '86400')),
+    },
+
+    // Queue Configuration
+    queues: {
+      email: getEnv('EMAIL_QUEUE_NAME', 'email-queue'),
+      notification: getEnv('NOTIFICATION_QUEUE_NAME', 'notification-queue'),
+    },
+  };
+}
+
+// Default environment configuration (for backward compatibility)
+export const env: EnvironmentConfig = createEnvironmentConfig();
 
 // Debug: Log environment variables (without sensitive data)
-export const logEnvironment = () => {
+export const logEnvironment = (dopplerService?: DopplerService) => {
+  const config = createEnvironmentConfig(dopplerService);
+
   console.log('Environment Configuration:');
   console.log('Database:', {
-    host: env.database.host,
-    port: env.database.port,
-    username: env.database.username,
-    database: env.database.database,
-    password: env.database.password ? '***' : 'undefined',
+    host: config.database.host,
+    port: config.database.port,
+    username: config.database.username,
+    database: config.database.database,
+    password: config.database.password ? '***' : 'undefined',
   });
-  console.log('Redis:', env.redis);
-  console.log('App:', env.app);
-  console.log('SMTP Host:', env.smtp.host);
-  console.log('Google Client ID:', env.google.clientId ? '***' : 'undefined');
-  console.log('Queues:', env.queues);
+  console.log('Redis:', config.redis);
+  console.log('App:', config.app);
+  console.log('SMTP Host:', config.smtp.host);
+  console.log(
+    'Google Client ID:',
+    config.google.clientId ? '***' : 'undefined',
+  );
+  console.log('Queues:', config.queues);
+
+  if (dopplerService) {
+    console.log(
+      'Doppler Status:',
+      dopplerService.isDopplerAvailable() ? 'Available' : 'Not Available',
+    );
+  }
 };
 
 // Export individual variables for backward compatibility

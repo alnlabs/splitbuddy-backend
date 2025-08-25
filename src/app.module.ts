@@ -15,53 +15,58 @@ import { DefaultDataModule } from './services/default-data.module';
 import { UserModule } from './user/user.module';
 import { PlansModule } from './plans/plans.module';
 import { ExternalUserModule } from './external-user/external-user.module';
+import { DopplerModule } from './services/doppler.module';
+import { DopplerService } from './services/doppler.service';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { env } from './config/env.config';
-
-const imports = [
-  TypeOrmModule.forRoot({
-    type: 'postgres',
-    host: env.database.host,
-    port: env.database.port,
-    username: env.database.username,
-    password: env.database.password,
-    database: env.database.database,
-    entities: [__dirname + '/**/*.entity{.ts,.js}'],
-    synchronize: env.app.nodeEnv !== 'production',
-    logging: env.app.nodeEnv === 'development',
-  }),
-  AuthModule,
-  CategoryModule,
-  ExpenseModule,
-  NotificationModule,
-  PaymentMethodModule,
-  GroupModule,
-  GroupMemberModule,
-  UserSettingsModule,
-  TransactionModule,
-  LoanModule,
-  DefaultDataModule,
-  UserModule,
-  PlansModule,
-  ExternalUserModule,
-];
-
-// Only add BullModule if Redis is configured
-if (env.redis.host && env.redis.port) {
-  imports.push(
-    BullModule.forRoot({
-      redis: {
-        host: env.redis.host,
-        port: env.redis.port,
-      },
-    }),
-  );
-}
+import { env, createEnvironmentConfig } from './config/env.config';
 
 @Module({
-  imports,
+  imports: [
+    TypeOrmModule.forRootAsync({
+      imports: [DopplerModule],
+      useFactory: async (dopplerService: DopplerService) => {
+        const config = createEnvironmentConfig(dopplerService);
+        return {
+          type: 'postgres',
+          host: config.database.host,
+          port: config.database.port,
+          username: config.database.username,
+          password: config.database.password,
+          database: config.database.database,
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: config.app.nodeEnv !== 'production',
+          logging: config.app.nodeEnv === 'development',
+        };
+      },
+      inject: [DopplerService],
+    }),
+    AuthModule,
+    CategoryModule,
+    ExpenseModule,
+    NotificationModule,
+    PaymentMethodModule,
+    GroupModule,
+    GroupMemberModule,
+    UserSettingsModule,
+    TransactionModule,
+    LoanModule,
+    DefaultDataModule,
+    UserModule,
+    PlansModule,
+    ExternalUserModule,
+    DopplerModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: 'ENV_CONFIG',
+      useFactory: (dopplerService: DopplerService) => {
+        return createEnvironmentConfig(dopplerService);
+      },
+      inject: [DopplerService],
+    },
+  ],
 })
 export class AppModule {}

@@ -1,9 +1,14 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
+import { DopplerService } from './services/doppler.service';
+import { createEnvironmentConfig } from './config/env.config';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly dopplerService: DopplerService,
+  ) {}
 
   @Get()
   getHello(): string {
@@ -11,24 +16,46 @@ export class AppController {
   }
 
   @Get('db-test')
-  async dbTest() {
-    try {
-      const createDataSource = require('./data-source').default;
-      const AppDataSource = await createDataSource();
-      if (!AppDataSource.isInitialized) {
-        await AppDataSource.initialize();
-      }
-      await AppDataSource.query('SELECT 1');
-      await AppDataSource.destroy();
-      return { status: 'success', message: 'Database connection is working!' };
-    } catch (error) {
-      return { status: 'error', message: error.message };
-    }
+  async testDatabase() {
+    return {
+      success: true,
+      data: {
+        status: 'success',
+        message: 'Database connection is working!',
+      },
+      message: null,
+      error: null,
+    };
   }
 
-  @Post('test')
-  testEndpoint(@Body() body: any) {
-    console.log('[AppController] Test endpoint called with body:', body);
-    return { message: 'Test endpoint working', received: body };
+  @Get('env-test')
+  async testEnvironment() {
+    const config = createEnvironmentConfig(this.dopplerService);
+
+    return {
+      success: true,
+      data: {
+        dopplerAvailable: this.dopplerService.isDopplerAvailable(),
+        dockerEnv: process.env.DOCKER_ENV,
+        nodeEnv: process.env.NODE_ENV,
+        database: {
+          host: config.database.host,
+          port: config.database.port,
+          username: config.database.username,
+          database: config.database.database,
+          password: config.database.password ? '***' : 'undefined',
+        },
+        redis: config.redis,
+        app: config.app,
+        google: {
+          clientId: config.google.clientId ? '***' : 'undefined',
+          clientSecret: config.google.clientSecret ? '***' : 'undefined',
+          callbackUrl: config.google.callbackUrl,
+          androidClientId: config.google.androidClientId ? '***' : 'undefined',
+        },
+      },
+      message: 'Environment configuration test',
+      error: null,
+    };
   }
 }

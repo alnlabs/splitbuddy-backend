@@ -1,0 +1,75 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SKIP_INSTALL: ${SKIP_INSTALL:-false}
+    container_name: splitbuddy_backend_dev
+    ports:
+      - '5900:5900'
+    # Environment variables will be injected by Doppler
+    # Use doppler run -- docker-compose -f docker-compose.dev.yml up
+    environment:
+      # Docker environment flag
+      DOCKER_ENV: 'true'
+      # Doppler configuration
+      DOPPLER_TOKEN: ${DOPPLER_TOKEN}
+      DOPPLER_PROJECT: ${DOPPLER_PROJECT:-shared-configs}
+      DOPPLER_CONFIG: ${DOPPLER_CONFIG:-dev}
+      # Database configuration (fallback values)
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-splitbuddy_user_dev}
+      DB_PASSWORD: ${DB_PASSWORD:-SplitBuddy2024!Dev}
+      DB_DATABASE: ${DB_DATABASE:-splitbuddy_dev}
+      # Redis configuration (fallback values)
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5900/api/v1/db-test']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: splitbuddy_postgres_dev
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-splitbuddy_dev}
+      POSTGRES_USER: ${DB_USERNAME:-splitbuddy_user_dev}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-SplitBuddy2024!Dev}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./setup_db.sql:/docker-entrypoint-initdb.d/setup_db.sql
+    ports:
+      - '5436:5432' # Different port to avoid conflicts
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME:-splitbuddy_user_dev} -d ${DB_DATABASE:-splitbuddy_dev}']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: splitbuddy_redis_dev
+    ports:
+      - '6382:6379' # Different port to avoid conflicts
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data_dev:
