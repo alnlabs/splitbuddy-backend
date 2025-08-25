@@ -149,6 +149,35 @@ This project uses **Doppler** for secure environment variable management across 
 - **Platform-specific OAuth** - Separate client IDs for web, Android, iOS
 - **Secure by default** - No sensitive data in version control
 
+## 🔧 **Environment Variables Quick Reference**
+
+### **Required Variables**
+```bash
+# Database
+DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE
+
+# Redis
+REDIS_HOST, REDIS_PORT
+
+# JWT
+JWT_SECRET
+
+# SMTP (Email)
+SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+
+# Google OAuth
+GOOGLE_WEB_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID, GOOGLE_IOS_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+
+# App
+APP_PORT, NODE_ENV, CORS_ORIGIN
+
+# Queues
+EMAIL_QUEUE_NAME, NOTIFICATION_QUEUE_NAME
+```
+
+**📋 Complete list with examples: [SETUP.md#environment-variables](SETUP.md#-environment-variables)**
+
 ---
 
 ## 🤝 **Contributing**
