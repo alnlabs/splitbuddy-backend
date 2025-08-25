@@ -9,6 +9,6 @@ export class EmailProcessor {
   @Process('send-email')
   async handleSendEmail(job: Job) {
     const { to, subject, text, html } = job.data;
-    return this.notificationService.processSendEmail(to, subject, text, html);
+    return this.notificationService.processSendEmail({ to, subject, text, html });
   }
 }

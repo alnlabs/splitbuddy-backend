@@ -173,10 +173,8 @@ export class FixUserSettingsTable1754311016000 implements MigrationInterface {
     `);
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    // This migration is designed to fix production issues
-    // The down migration would be complex and potentially dangerous
-    // So we'll leave it empty to prevent accidental rollback
-    console.log('Down migration not implemented for safety reasons');
+  public async down(): Promise<void> {
+    // This migration only adds columns, so down migration is not needed
+    // The columns will be removed by subsequent migrations if needed
   }
 }

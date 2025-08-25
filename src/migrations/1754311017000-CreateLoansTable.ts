@@ -194,19 +194,41 @@ export class CreateLoansTable1754311017000 implements MigrationInterface {
     await queryRunner.query(`DROP INDEX "IDX_loans_lender_id"`);
 
     // Drop foreign key constraints for loan_payments
-    await queryRunner.query(`ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_payment_method_id"`);
-    await queryRunner.query(`ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_author_id"`);
-    await queryRunner.query(`ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_payee_id"`);
-    await queryRunner.query(`ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_payer_id"`);
-    await queryRunner.query(`ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_loan_id"`);
+    await queryRunner.query(
+      `ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_payment_method_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_author_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_payee_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_payer_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "loan_payments" DROP CONSTRAINT "FK_loan_payments_loan_id"`,
+    );
 
     // Drop foreign key constraints for loans
-    await queryRunner.query(`ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_category_id"`);
-    await queryRunner.query(`ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_payment_method_id"`);
-    await queryRunner.query(`ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_group_id"`);
-    await queryRunner.query(`ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_author_id"`);
-    await queryRunner.query(`ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_borrower_id"`);
-    await queryRunner.query(`ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_lender_id"`);
+    await queryRunner.query(
+      `ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_category_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_payment_method_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_group_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_author_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_borrower_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "loans" DROP CONSTRAINT "FK_loans_lender_id"`,
+    );
 
     // Drop tables
     await queryRunner.query(`DROP TABLE "loan_payments"`);

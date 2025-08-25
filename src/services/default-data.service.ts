@@ -33,7 +33,7 @@ export class DefaultDataService {
         const paymentMethod = this.paymentMethodRepo.create(method);
         await this.paymentMethodRepo.save(paymentMethod);
         createdPaymentMethods.push(paymentMethod);
-      } catch (error) {
+      } catch {
         // If payment method already exists, skip it
         console.log(
           `Payment method ${method.name} already exists for user ${userId}`,
@@ -71,7 +71,7 @@ export class DefaultDataService {
         const newCategory = this.categoryRepo.create(category);
         await this.categoryRepo.save(newCategory);
         createdCategories.push(newCategory);
-      } catch (error) {
+      } catch {
         // If category already exists, skip it
         console.log(
           `Category ${category.name} already exists for user ${userId}`,

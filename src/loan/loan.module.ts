@@ -5,12 +5,15 @@ import { LoanService } from './loan.service';
 import { Loan } from '../entities/loan.entity';
 import { LoanPayment } from '../entities/loan-payment.entity';
 import { User } from '../entities/user.entity';
+import { ExternalUser } from '../entities/external-user.entity';
 import { NotificationModule } from '../notification/notification.module';
+import { ExternalUserModule } from '../external-user/external-user.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Loan, LoanPayment, User]),
+    TypeOrmModule.forFeature([Loan, LoanPayment, User, ExternalUser]),
     NotificationModule,
+    ExternalUserModule,
   ],
   controllers: [LoanController],
   providers: [LoanService],

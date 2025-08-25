@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import {
-  IsNotEmpty,
   IsNumber,
   IsDateString,
   IsOptional,

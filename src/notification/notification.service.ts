@@ -76,15 +76,10 @@ export class NotificationService {
     return this.notificationRepo.save(notification);
   }
 
-  async processSendEmail(
-    to: string,
-    subject: string,
-    text: string,
-    html?: string,
-  ) {
-    // This would be implemented in the processor
-    console.log(`Sending email to ${to}: ${subject}`);
-    return { success: true };
+  async processSendEmail(notification: any): Promise<void> {
+    // Process email notification
+    // This would typically send an email using a service like SendGrid, AWS SES, etc.
+    console.log('Sending email notification:', notification);
   }
 
   async processSendInApp(userId: string, content: string) {

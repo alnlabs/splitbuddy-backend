@@ -1,16 +1,71 @@
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, IsDateString, IsBoolean, IsArray, Min, Max } from 'class-validator';
-import { LoanType, LoanStatus, InterestType } from '../entities/loan.entity';
-import { PaymentType } from '../entities/loan-payment.entity';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsDateString,
+  IsBoolean,
+  IsArray,
+  Min,
+  Max,
+  IsEmail,
+  ValidateNested,
+  IsObject,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class UserReferenceDto {
+  @IsOptional()
+  @IsUUID()
+  id?: string; // Internal user ID
+
+  @IsOptional()
+  @IsString()
+  name?: string; // For creating external users
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}
+
+export class ExternalUserReferenceDto {
+  @IsOptional()
+  @IsUUID()
+  id?: string; // External user ID
+
+  @IsOptional()
+  @IsString()
+  name?: string; // For creating new external users
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}
 
 export class CreateLoanDto {
-  @IsEnum(LoanType)
-  loanType: LoanType;
+  @IsEnum(['given', 'taken'])
+  loanType: 'given' | 'taken';
 
-  @IsUUID()
-  lenderId: string;
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserReferenceDto)
+  @IsObject()
+  lender?: UserReferenceDto;
 
-  @IsUUID()
-  borrowerId: string;
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserReferenceDto)
+  @IsObject()
+  borrower?: UserReferenceDto;
 
   @IsNumber()
   @Min(0.01)
@@ -23,8 +78,8 @@ export class CreateLoanDto {
   interestRate?: number;
 
   @IsOptional()
-  @IsEnum(InterestType)
-  interestType?: InterestType;
+  @IsEnum(['simple', 'compound', 'none'])
+  interestType?: 'simple' | 'compound' | 'none';
 
   @IsDateString()
   startDate: string;
@@ -118,16 +173,16 @@ export class UpdateLoanDto {
   interestRate?: number;
 
   @IsOptional()
-  @IsEnum(InterestType)
-  interestType?: InterestType;
+  @IsEnum(['simple', 'compound', 'none'])
+  interestType?: 'simple' | 'compound' | 'none';
 
   @IsOptional()
   @IsDateString()
   dueDate?: string;
 
   @IsOptional()
-  @IsEnum(LoanStatus)
-  status?: LoanStatus;
+  @IsEnum(['active', 'repaid', 'overdue', 'defaulted', 'cancelled'])
+  status?: 'active' | 'repaid' | 'overdue' | 'defaulted' | 'cancelled';
 
   @IsOptional()
   @IsString()
@@ -198,8 +253,8 @@ export class CreateLoanPaymentDto {
   @Min(0.01)
   amount: number;
 
-  @IsEnum(PaymentType)
-  paymentType: PaymentType;
+  @IsEnum(['principal', 'interest', 'late_fee', 'partial'])
+  paymentType: 'principal' | 'interest' | 'late_fee' | 'partial';
 
   @IsOptional()
   @IsNumber()
@@ -247,8 +302,8 @@ export class UpdateLoanPaymentDto {
   amount?: number;
 
   @IsOptional()
-  @IsEnum(PaymentType)
-  paymentType?: PaymentType;
+  @IsEnum(['principal', 'interest', 'late_fee', 'partial'])
+  paymentType?: 'principal' | 'interest' | 'late_fee' | 'partial';
 
   @IsOptional()
   @IsNumber()
@@ -292,20 +347,22 @@ export class UpdateLoanPaymentDto {
 
 export class LoanQueryDto {
   @IsOptional()
-  @IsEnum(LoanType)
-  loanType?: LoanType;
+  @IsEnum(['given', 'taken'])
+  loanType?: 'given' | 'taken';
 
   @IsOptional()
-  @IsEnum(LoanStatus)
-  status?: LoanStatus;
+  @IsEnum(['active', 'repaid', 'overdue', 'defaulted', 'cancelled'])
+  status?: 'active' | 'repaid' | 'overdue' | 'defaulted' | 'cancelled';
 
   @IsOptional()
-  @IsUUID()
-  lenderId?: string;
+  @ValidateNested()
+  @Type(() => UserReferenceDto)
+  lender?: UserReferenceDto;
 
   @IsOptional()
-  @IsUUID()
-  borrowerId?: string;
+  @ValidateNested()
+  @Type(() => UserReferenceDto)
+  borrower?: UserReferenceDto;
 
   @IsOptional()
   @IsUUID()
@@ -341,8 +398,8 @@ export class LoanPaymentQueryDto {
   loanId?: string;
 
   @IsOptional()
-  @IsEnum(PaymentType)
-  paymentType?: PaymentType;
+  @IsEnum(['principal', 'interest', 'late_fee', 'partial'])
+  paymentType?: 'principal' | 'interest' | 'late_fee' | 'partial';
 
   @IsOptional()
   @IsUUID()
@@ -388,4 +445,12 @@ export class LoanSummaryDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @IsOptional()
+  @IsEnum(['given', 'taken'])
+  loanType?: 'given' | 'taken';
+
+  @IsOptional()
+  @IsEnum(['active', 'repaid', 'overdue', 'defaulted', 'cancelled'])
+  status?: 'active' | 'repaid' | 'overdue' | 'defaulted' | 'cancelled';
 }

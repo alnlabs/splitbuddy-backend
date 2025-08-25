@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Loan } from './loan.entity';
+import { ExternalUser } from './external-user.entity';
 
 export type PaymentType = 'principal' | 'interest' | 'late_fee' | 'partial';
 
@@ -20,30 +21,54 @@ export class LoanPayment {
   @Column({ name: 'loan_id', type: 'uuid' })
   loanId: string;
 
-  @Column({ name: 'payer_id', type: 'uuid' })
-  payerId: string;
+  @Column({ name: 'payer_id', type: 'uuid', nullable: true })
+  payerId: string | null;
 
-  @Column({ name: 'payee_id', type: 'uuid' })
-  payeeId: string;
+  @Column({ name: 'payee_id', type: 'uuid', nullable: true })
+  payeeId: string | null;
+
+  @Column({ name: 'external_payer_id', type: 'uuid', nullable: true })
+  externalPayerId: string | null;
+
+  @Column({ name: 'external_payee_id', type: 'uuid', nullable: true })
+  externalPayeeId: string | null;
 
   @Column('numeric', { precision: 12, scale: 2 })
   amount: number;
 
-  @Column({ 
-    name: 'payment_type', 
-    type: 'enum', 
-    enum: ['principal', 'interest', 'late_fee', 'partial'], 
-    default: 'partial' 
+  @Column({
+    name: 'payment_type',
+    type: 'enum',
+    enum: ['principal', 'interest', 'late_fee', 'partial'],
+    default: 'partial',
   })
   paymentType: PaymentType;
 
-  @Column({ name: 'principal_amount', type: 'numeric', precision: 12, scale: 2, default: 0 })
+  @Column({
+    name: 'principal_amount',
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
   principalAmount: number;
 
-  @Column({ name: 'interest_amount', type: 'numeric', precision: 12, scale: 2, default: 0 })
+  @Column({
+    name: 'interest_amount',
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
   interestAmount: number;
 
-  @Column({ name: 'late_fee_amount', type: 'numeric', precision: 12, scale: 2, default: 0 })
+  @Column({
+    name: 'late_fee_amount',
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
   lateFeeAmount: number;
 
   @Column({ type: 'date' })
@@ -78,13 +103,21 @@ export class LoanPayment {
   @JoinColumn({ name: 'loan_id' })
   loan: Loan;
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'payer_id' })
-  payer: User;
+  payer: User | null;
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'payee_id' })
-  payee: User;
+  payee: User | null;
+
+  @ManyToOne(() => ExternalUser, { nullable: true })
+  @JoinColumn({ name: 'external_payer_id' })
+  externalPayer: ExternalUser | null;
+
+  @ManyToOne(() => ExternalUser, { nullable: true })
+  @JoinColumn({ name: 'external_payee_id' })
+  externalPayee: ExternalUser | null;
 
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'author_id' })

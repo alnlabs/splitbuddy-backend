@@ -14,6 +14,7 @@ import { LoanModule } from './loan/loan.module';
 import { DefaultDataModule } from './services/default-data.module';
 import { UserModule } from './user/user.module';
 import { PlansModule } from './plans/plans.module';
+import { ExternalUserModule } from './external-user/external-user.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { env } from './config/env.config';
@@ -43,6 +44,7 @@ const imports = [
   DefaultDataModule,
   UserModule,
   PlansModule,
+  ExternalUserModule,
 ];
 
 // Only add BullModule if Redis is configured

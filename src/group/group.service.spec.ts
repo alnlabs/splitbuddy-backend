@@ -1,18 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { GroupService } from './group.service';
-import { UserGroup } from '../entities/user-group.entity';
-import { UserGroupMember } from '../entities/user-group-member.entity';
-import { Expense } from '../entities/expense.entity';
-import { ExpenseSplit } from '../entities/expense-split.entity';
 
 describe('GroupService', () => {
   let service: GroupService;
-  let groupRepo: Repository<UserGroup>;
-  let groupMemberRepo: Repository<UserGroupMember>;
-  let expenseRepo: Repository<Expense>;
-  let expenseSplitRepo: Repository<ExpenseSplit>;
   let dataSource: DataSource;
 
   beforeEach(async () => {
@@ -20,18 +11,17 @@ describe('GroupService', () => {
       providers: [
         GroupService,
         {
-          provide: getRepositoryToken(UserGroup),
+          provide: 'UserGroupRepository',
           useValue: {
             create: jest.fn(),
             save: jest.fn(),
             findOne: jest.fn(),
             find: jest.fn(),
-            update: jest.fn(),
             delete: jest.fn(),
           },
         },
         {
-          provide: getRepositoryToken(UserGroupMember),
+          provide: 'UserGroupMemberRepository',
           useValue: {
             create: jest.fn(),
             save: jest.fn(),
@@ -40,21 +30,15 @@ describe('GroupService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Expense),
+          provide: 'ExpenseRepository',
           useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
             find: jest.fn(),
-            findOne: jest.fn(),
-            update: jest.fn(),
             delete: jest.fn(),
           },
         },
         {
-          provide: getRepositoryToken(ExpenseSplit),
+          provide: 'ExpenseSplitRepository',
           useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
             find: jest.fn(),
             delete: jest.fn(),
           },
@@ -62,20 +46,12 @@ describe('GroupService', () => {
         {
           provide: DataSource,
           useValue: {
-            createQueryBuilder: jest.fn(),
-            query: jest.fn(),
             createQueryRunner: jest.fn().mockReturnValue({
               connect: jest.fn(),
               startTransaction: jest.fn(),
               commitTransaction: jest.fn(),
               rollbackTransaction: jest.fn(),
               release: jest.fn(),
-              query: jest.fn(),
-              manager: {
-                find: jest.fn().mockResolvedValue([]),
-                delete: jest.fn().mockResolvedValue({ affected: 0 }),
-                save: jest.fn(),
-              },
             }),
           },
         },
@@ -83,16 +59,6 @@ describe('GroupService', () => {
     }).compile();
 
     service = module.get<GroupService>(GroupService);
-    groupRepo = module.get<Repository<UserGroup>>(
-      getRepositoryToken(UserGroup),
-    );
-    groupMemberRepo = module.get<Repository<UserGroupMember>>(
-      getRepositoryToken(UserGroupMember),
-    );
-    expenseRepo = module.get<Repository<Expense>>(getRepositoryToken(Expense));
-    expenseSplitRepo = module.get<Repository<ExpenseSplit>>(
-      getRepositoryToken(ExpenseSplit),
-    );
     dataSource = module.get<DataSource>(DataSource);
   });
 
@@ -173,7 +139,13 @@ describe('GroupService', () => {
 
       const result = await service.delete(groupId);
 
-      // Check the response format (with global response middleware)
+      // Verify that the queryRunner was used correctly
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+
+      // Check the response format for group with no expenses
       expect(result).toEqual({
         success: true,
         data: {

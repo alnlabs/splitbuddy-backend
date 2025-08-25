@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DeepPartial, DataSource } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Expense } from '../entities/expense.entity';
 import { ExpenseSplit } from '../entities/expense-split.entity';
 import { NotificationService } from '../notification/notification.service';

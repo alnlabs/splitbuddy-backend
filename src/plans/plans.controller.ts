@@ -3,15 +3,13 @@ import {
   Get,
   Post,
   Put,
-  Delete,
   Body,
   Param,
+  Delete,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import { PlansService } from './plans.service';
 import { Request } from 'express';
-import { AuthGuard } from '@nestjs/passport';
 
 @Controller('plans')
 export class PlansController {

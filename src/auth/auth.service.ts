@@ -216,7 +216,7 @@ export class AuthService {
           },
         },
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Google authentication failed');
     }
   }
@@ -307,7 +307,7 @@ export class AuthService {
 
       user.password = newPassword; // In production, hash the password
       await this.userRepository.save(user);
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }
@@ -348,7 +348,7 @@ export class AuthService {
 
       user.activated = true; // Use activated instead of emailVerified
       await this.userRepository.save(user);
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }

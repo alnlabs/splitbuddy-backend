@@ -8,9 +8,15 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from './user.entity';
+import { ExternalUser } from './external-user.entity';
 
 export type LoanType = 'given' | 'taken';
-export type LoanStatus = 'active' | 'repaid' | 'overdue' | 'defaulted' | 'cancelled';
+export type LoanStatus =
+  | 'active'
+  | 'repaid'
+  | 'overdue'
+  | 'defaulted'
+  | 'cancelled';
 export type InterestType = 'simple' | 'compound' | 'none';
 
 @Entity('loans')
@@ -21,11 +27,17 @@ export class Loan {
   @Column({ name: 'loan_type', type: 'enum', enum: ['given', 'taken'] })
   loanType: LoanType;
 
-  @Column({ name: 'lender_id', type: 'uuid' })
-  lenderId: string;
+  @Column({ name: 'lender_id', type: 'uuid', nullable: true })
+  lenderId: string | null;
 
-  @Column({ name: 'borrower_id', type: 'uuid' })
-  borrowerId: string;
+  @Column({ name: 'borrower_id', type: 'uuid', nullable: true })
+  borrowerId: string | null;
+
+  @Column({ name: 'external_lender_id', type: 'uuid', nullable: true })
+  externalLenderId: string | null;
+
+  @Column({ name: 'external_borrower_id', type: 'uuid', nullable: true })
+  externalBorrowerId: string | null;
 
   @Column('numeric', { precision: 12, scale: 2 })
   principalAmount: number;
@@ -45,11 +57,11 @@ export class Loan {
   @Column('numeric', { precision: 5, scale: 2, nullable: true })
   interestRate: number;
 
-  @Column({ 
-    name: 'interest_type', 
-    type: 'enum', 
-    enum: ['simple', 'compound', 'none'], 
-    default: 'simple' 
+  @Column({
+    name: 'interest_type',
+    type: 'enum',
+    enum: ['simple', 'compound', 'none'],
+    default: 'simple',
   })
   interestType: InterestType;
 
@@ -60,13 +72,13 @@ export class Loan {
   dueDate: Date;
 
   @Column({ type: 'date', nullable: true })
-  repaidDate: Date;
+  repaidDate: Date | null;
 
-  @Column({ 
-    name: 'status', 
-    type: 'enum', 
-    enum: ['active', 'repaid', 'overdue', 'defaulted', 'cancelled'], 
-    default: 'active' 
+  @Column({
+    name: 'status',
+    type: 'enum',
+    enum: ['active', 'repaid', 'overdue', 'defaulted', 'cancelled'],
+    default: 'active',
   })
   status: LoanStatus;
 
@@ -94,7 +106,13 @@ export class Loan {
   @Column({ name: 'recurring_frequency', nullable: true })
   recurringFrequency: string; // daily, weekly, monthly, yearly
 
-  @Column({ name: 'recurring_amount', type: 'numeric', precision: 12, scale: 2, nullable: true })
+  @Column({
+    name: 'recurring_amount',
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+  })
   recurringAmount: number;
 
   @Column({ name: 'next_payment_date', type: 'date', nullable: true })
@@ -109,13 +127,31 @@ export class Loan {
   @Column({ name: 'collateral_description', type: 'text', nullable: true })
   collateralDescription: string;
 
-  @Column({ name: 'collateral_value', type: 'numeric', precision: 12, scale: 2, nullable: true })
+  @Column({
+    name: 'collateral_value',
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+  })
   collateralValue: number;
 
-  @Column({ name: 'late_fee_rate', type: 'numeric', precision: 5, scale: 2, nullable: true })
+  @Column({
+    name: 'late_fee_rate',
+    type: 'numeric',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
   lateFeeRate: number;
 
-  @Column({ name: 'late_fee_amount', type: 'numeric', precision: 12, scale: 2, default: 0 })
+  @Column({
+    name: 'late_fee_amount',
+    type: 'numeric',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
   lateFeeAmount: number;
 
   @Column({ name: 'documents', type: 'simple-array', nullable: true })
@@ -131,13 +167,21 @@ export class Loan {
   updatedAt: Date;
 
   // Relationships
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'lender_id' })
-  lender: User;
+  lender: User | null;
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'borrower_id' })
-  borrower: User;
+  borrower: User | null;
+
+  @ManyToOne(() => ExternalUser, { nullable: true })
+  @JoinColumn({ name: 'external_lender_id' })
+  externalLender: ExternalUser | null;
+
+  @ManyToOne(() => ExternalUser, { nullable: true })
+  @JoinColumn({ name: 'external_borrower_id' })
+  externalBorrower: ExternalUser | null;
 
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'author_id' })

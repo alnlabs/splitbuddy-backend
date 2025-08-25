@@ -1,19 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, In } from 'typeorm';
-import { Loan, LoanType, LoanStatus, InterestType } from '../entities/loan.entity';
-import { LoanPayment, PaymentType } from '../entities/loan-payment.entity';
+import { Repository, Between } from 'typeorm';
+import { Loan, InterestType } from '../entities/loan.entity';
+import { LoanPayment } from '../entities/loan-payment.entity';
 import { User } from '../entities/user.entity';
-import { 
-  CreateLoanDto, 
-  UpdateLoanDto, 
-  CreateLoanPaymentDto, 
+import { ExternalUser } from '../entities/external-user.entity';
+import {
+  CreateLoanDto,
+  UpdateLoanDto,
+  CreateLoanPaymentDto,
   UpdateLoanPaymentDto,
   LoanQueryDto,
   LoanPaymentQueryDto,
-  LoanSummaryDto
+  LoanSummaryDto,
 } from './loan.dto';
 import { NotificationService } from '../notification/notification.service';
+import { ExternalUserService } from '../external-user/external-user.service';
 
 @Injectable()
 export class LoanService {
@@ -24,18 +30,92 @@ export class LoanService {
     private readonly loanPaymentRepo: Repository<LoanPayment>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(ExternalUser)
+    private readonly externalUserRepo: Repository<ExternalUser>,
     private readonly notificationService: NotificationService,
+    private readonly externalUserService: ExternalUserService,
   ) {}
 
   async create(createLoanDto: CreateLoanDto, userId: string): Promise<Loan> {
-    // Validate users exist
-    const [lender, borrower] = await Promise.all([
-      this.userRepo.findOne({ where: { id: createLoanDto.lenderId } }),
-      this.userRepo.findOne({ where: { id: createLoanDto.borrowerId } }),
-    ]);
+    let lender: User | ExternalUser | null = null;
+    let borrower: User | ExternalUser | null = null;
+    let isLenderExternal = false;
+    let isBorrowerExternal = false;
 
-    if (!lender || !borrower) {
-      throw new NotFoundException('Lender or borrower not found');
+    // Handle lender
+    if (createLoanDto.lender?.id) {
+      // Check if it's an internal user
+      lender = await this.userRepo.findOne({
+        where: { id: createLoanDto.lender.id, enabled: true },
+      });
+
+      if (!lender) {
+        // Check if it's an external user
+        lender = await this.externalUserRepo.findOne({
+          where: { id: createLoanDto.lender.id, isActive: true },
+        });
+        if (lender) {
+          isLenderExternal = true;
+        }
+      }
+
+      if (!lender) {
+        throw new NotFoundException('Lender not found');
+      }
+    } else if (createLoanDto.lender?.name) {
+      // Create or find external user for lender
+      lender = await this.externalUserService.findOrCreateExternalUser(
+        {
+          firstName: createLoanDto.lender.name.split(' ')[0],
+          lastName:
+            createLoanDto.lender.name.split(' ').slice(1).join(' ') ||
+            undefined,
+          email: createLoanDto.lender.email,
+          phone: createLoanDto.lender.phone,
+        },
+        userId,
+      );
+      isLenderExternal = true;
+    } else {
+      throw new BadRequestException('Lender information is required');
+    }
+
+    // Handle borrower
+    if (createLoanDto.borrower?.id) {
+      // Check if it's an internal user
+      borrower = await this.userRepo.findOne({
+        where: { id: createLoanDto.borrower.id, enabled: true },
+      });
+
+      if (!borrower) {
+        // Check if it's an external user
+        borrower = await this.externalUserRepo.findOne({
+          where: { id: createLoanDto.borrower.id, isActive: true },
+        });
+        if (borrower) {
+          isBorrowerExternal = true;
+        }
+      }
+
+      if (!borrower) {
+        throw new NotFoundException('Borrower not found');
+      }
+    } else if (createLoanDto.borrower?.name) {
+      // Create or find external user for borrower
+      borrower = await this.externalUserService.findOrCreateExternalUser(
+        {
+          firstName: createLoanDto.borrower.name.split(' ')[0],
+          lastName:
+            createLoanDto.borrower.name.split(' ').slice(1).join(' ') ||
+            undefined,
+          email: createLoanDto.borrower.email,
+          phone: createLoanDto.borrower.phone,
+        },
+        userId,
+      );
+      isBorrowerExternal = true;
+    } else {
+      throw new BadRequestException('Borrower information is required');
     }
 
     // Calculate interest and total amount
@@ -43,41 +123,58 @@ export class LoanService {
       createLoanDto.principalAmount,
       createLoanDto.interestRate || 0,
       createLoanDto.interestType || 'simple',
-      createLoanDto.startDate,
-      createLoanDto.dueDate
+      new Date(createLoanDto.startDate),
+      new Date(createLoanDto.dueDate),
     );
 
     const totalAmount = createLoanDto.principalAmount + interestAmount;
 
-    // Create loan
-    const loan = this.loanRepo.create({
+    // Create loan with appropriate fields
+    const loanData: any = {
       ...createLoanDto,
       interestAmount,
       totalAmount,
       remainingAmount: totalAmount,
       authorId: userId,
-    });
+    };
 
+    // Set lender and borrower IDs based on type
+    if (isLenderExternal) {
+      loanData.externalLenderId = lender.id;
+    } else {
+      loanData.lenderId = lender.id;
+    }
+
+    if (isBorrowerExternal) {
+      loanData.externalBorrowerId = borrower.id;
+    } else {
+      loanData.borrowerId = borrower.id;
+    }
+
+    const loan = this.loanRepo.create(loanData);
     const savedLoan = await this.loanRepo.save(loan);
 
     // Send notifications
-    await this.sendLoanNotifications(savedLoan, 'created');
+    await this.sendLoanNotifications(savedLoan as unknown as Loan, 'created');
 
-    return savedLoan;
+    return savedLoan as unknown as Loan;
   }
 
-  async findAll(query: LoanQueryDto, userId: string): Promise<{ loans: Loan[]; total: number }> {
-    const { 
-      loanType, 
-      status, 
-      lenderId, 
-      borrowerId, 
-      groupId, 
-      search, 
-      startDate, 
-      endDate, 
-      page = 1, 
-      limit = 10 
+  async findAll(
+    query: LoanQueryDto,
+    userId: string,
+  ): Promise<{ loans: Loan[]; total: number }> {
+    const {
+      loanType,
+      status,
+      lender,
+      borrower,
+      groupId,
+      search,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
     } = query;
 
     const queryBuilder = this.loanRepo
@@ -85,7 +182,9 @@ export class LoanService {
       .leftJoinAndSelect('loan.lender', 'lender')
       .leftJoinAndSelect('loan.borrower', 'borrower')
       .leftJoinAndSelect('loan.author', 'author')
-      .where('(loan.lenderId = :userId OR loan.borrowerId = :userId)', { userId });
+      .where('(loan.lenderId = :userId OR loan.borrowerId = :userId)', {
+        userId,
+      });
 
     // Apply filters
     if (loanType) {
@@ -96,12 +195,16 @@ export class LoanService {
       queryBuilder.andWhere('loan.status = :status', { status });
     }
 
-    if (lenderId) {
-      queryBuilder.andWhere('loan.lenderId = :lenderId', { lenderId });
+    if (lender?.id) {
+      queryBuilder.andWhere('loan.lenderId = :lenderId', {
+        lenderId: lender.id,
+      });
     }
 
-    if (borrowerId) {
-      queryBuilder.andWhere('loan.borrowerId = :borrowerId', { borrowerId });
+    if (borrower?.id) {
+      queryBuilder.andWhere('loan.borrowerId = :borrowerId', {
+        borrowerId: borrower.id,
+      });
     }
 
     if (groupId) {
@@ -111,12 +214,15 @@ export class LoanService {
     if (search) {
       queryBuilder.andWhere(
         '(loan.description ILIKE :search OR loan.notes ILIKE :search OR lender.firstName ILIKE :search OR lender.lastName ILIKE :search OR borrower.firstName ILIKE :search OR borrower.lastName ILIKE :search)',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
     if (startDate && endDate) {
-      queryBuilder.andWhere('loan.startDate BETWEEN :startDate AND :endDate', { startDate, endDate });
+      queryBuilder.andWhere('loan.startDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
     }
 
     // Get total count
@@ -135,7 +241,7 @@ export class LoanService {
   async findOne(id: string, userId: string): Promise<Loan> {
     const loan = await this.loanRepo.findOne({
       where: { id },
-      relations: ['lender', 'borrower', 'author'],
+      relations: ['lender', 'borrower', 'externalLender', 'externalBorrower'],
     });
 
     if (!loan) {
@@ -143,44 +249,58 @@ export class LoanService {
     }
 
     // Check if user has access to this loan
-    if (loan.lenderId !== userId && loan.borrowerId !== userId && loan.authorId !== userId) {
+    if (loan.lenderId !== userId && loan.borrowerId !== userId) {
       throw new BadRequestException('You do not have access to this loan');
     }
 
     return loan;
   }
 
-  async update(id: string, updateLoanDto: UpdateLoanDto, userId: string): Promise<Loan> {
+  async update(
+    id: string,
+    updateLoanDto: UpdateLoanDto,
+    userId: string,
+  ): Promise<Loan> {
     const loan = await this.findOne(id, userId);
 
     // Check if user can update this loan
     if (loan.authorId !== userId) {
-      throw new BadRequestException('Only the loan author can update this loan');
+      throw new BadRequestException(
+        'Only the loan author can update this loan',
+      );
     }
 
-    // Recalculate amounts if principal or interest rate changed
-    if (updateLoanDto.principalAmount || updateLoanDto.interestRate || updateLoanDto.interestType) {
+    // Recalculate interest and amounts if principal or dates changed
+    if (
+      updateLoanDto.principalAmount ||
+      updateLoanDto.interestRate ||
+      updateLoanDto.interestType ||
+      updateLoanDto.dueDate
+    ) {
       const principalAmount = updateLoanDto.principalAmount || loan.principalAmount;
-      const interestRate = updateLoanDto.interestRate ?? loan.interestRate;
+      const interestRate = updateLoanDto.interestRate || loan.interestRate;
       const interestType = updateLoanDto.interestType || loan.interestType;
+      const startDate = loan.startDate;
+      const dueDate = updateLoanDto.dueDate ? new Date(updateLoanDto.dueDate) : loan.dueDate;
 
       const interestAmount = this.calculateInterest(
         principalAmount,
         interestRate || 0,
         interestType,
-        loan.startDate,
-        updateLoanDto.dueDate || loan.dueDate
+        startDate,
+        dueDate,
       );
 
       const totalAmount = principalAmount + interestAmount;
       const remainingAmount = totalAmount - loan.paidAmount;
 
-      updateLoanDto.interestAmount = interestAmount;
-      updateLoanDto.totalAmount = totalAmount;
-      updateLoanDto.remainingAmount = remainingAmount;
+      // Update the loan object directly
+      loan.interestAmount = interestAmount;
+      loan.totalAmount = totalAmount;
+      loan.remainingAmount = remainingAmount;
     }
 
-    // Update loan
+    // Update loan with other fields
     Object.assign(loan, updateLoanDto);
     const updatedLoan = await this.loanRepo.save(loan);
 
@@ -195,13 +315,19 @@ export class LoanService {
 
     // Check if user can delete this loan
     if (loan.authorId !== userId) {
-      throw new BadRequestException('Only the loan author can delete this loan');
+      throw new BadRequestException(
+        'Only the loan author can delete this loan',
+      );
     }
 
     // Check if loan has payments
-    const paymentCount = await this.loanPaymentRepo.count({ where: { loanId: id } });
+    const paymentCount = await this.loanPaymentRepo.count({
+      where: { loanId: id },
+    });
     if (paymentCount > 0) {
-      throw new BadRequestException('Cannot delete loan with existing payments');
+      throw new BadRequestException(
+        'Cannot delete loan with existing payments',
+      );
     }
 
     await this.loanRepo.remove(loan);
@@ -210,12 +336,17 @@ export class LoanService {
     await this.sendLoanNotifications(loan, 'deleted');
   }
 
-  async createPayment(createPaymentDto: CreateLoanPaymentDto, userId: string): Promise<LoanPayment> {
+  async createPayment(
+    createPaymentDto: CreateLoanPaymentDto,
+    userId: string,
+  ): Promise<LoanPayment> {
     const loan = await this.findOne(createPaymentDto.loanId, userId);
 
     // Validate payment amount
     if (createPaymentDto.amount > loan.remainingAmount) {
-      throw new BadRequestException('Payment amount cannot exceed remaining loan amount');
+      throw new BadRequestException(
+        'Payment amount cannot exceed remaining loan amount',
+      );
     }
 
     // Determine payer and payee based on loan type
@@ -241,16 +372,19 @@ export class LoanService {
     return savedPayment;
   }
 
-  async findPayments(query: LoanPaymentQueryDto, userId: string): Promise<{ payments: LoanPayment[]; total: number }> {
-    const { 
-      loanId, 
-      paymentType, 
-      payerId, 
-      payeeId, 
-      startDate, 
-      endDate, 
-      page = 1, 
-      limit = 10 
+  async findPayments(
+    query: LoanPaymentQueryDto,
+    userId: string,
+  ): Promise<{ payments: LoanPayment[]; total: number }> {
+    const {
+      loanId,
+      paymentType,
+      payerId,
+      payeeId,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
     } = query;
 
     const queryBuilder = this.loanPaymentRepo
@@ -258,8 +392,9 @@ export class LoanService {
       .leftJoinAndSelect('payment.loan', 'loan')
       .leftJoinAndSelect('payment.payer', 'payer')
       .leftJoinAndSelect('payment.payee', 'payee')
-      .leftJoinAndSelect('payment.author', 'author')
-      .where('(payment.payerId = :userId OR payment.payeeId = :userId OR payment.authorId = :userId)', { userId });
+      .where('(loan.lenderId = :userId OR loan.borrowerId = :userId)', {
+        userId,
+      });
 
     // Apply filters
     if (loanId) {
@@ -267,7 +402,9 @@ export class LoanService {
     }
 
     if (paymentType) {
-      queryBuilder.andWhere('payment.paymentType = :paymentType', { paymentType });
+      queryBuilder.andWhere('payment.paymentType = :paymentType', {
+        paymentType,
+      });
     }
 
     if (payerId) {
@@ -279,7 +416,10 @@ export class LoanService {
     }
 
     if (startDate && endDate) {
-      queryBuilder.andWhere('payment.paymentDate BETWEEN :startDate AND :endDate', { startDate, endDate });
+      queryBuilder.andWhere(
+        'payment.paymentDate BETWEEN :startDate AND :endDate',
+        { startDate, endDate },
+      );
     }
 
     // Get total count
@@ -298,7 +438,7 @@ export class LoanService {
   async findPayment(id: string, userId: string): Promise<LoanPayment> {
     const payment = await this.loanPaymentRepo.findOne({
       where: { id },
-      relations: ['loan', 'payer', 'payee', 'author'],
+      relations: ['loan', 'payer', 'payee'],
     });
 
     if (!payment) {
@@ -306,19 +446,28 @@ export class LoanService {
     }
 
     // Check if user has access to this payment
-    if (payment.payerId !== userId && payment.payeeId !== userId && payment.authorId !== userId) {
+    if (
+      payment.loan.lenderId !== userId &&
+      payment.loan.borrowerId !== userId
+    ) {
       throw new BadRequestException('You do not have access to this payment');
     }
 
     return payment;
   }
 
-  async updatePayment(id: string, updatePaymentDto: UpdateLoanPaymentDto, userId: string): Promise<LoanPayment> {
+  async updatePayment(
+    id: string,
+    updatePaymentDto: UpdateLoanPaymentDto,
+    userId: string,
+  ): Promise<LoanPayment> {
     const payment = await this.findPayment(id, userId);
 
     // Check if user can update this payment
     if (payment.authorId !== userId) {
-      throw new BadRequestException('Only the payment author can update this payment');
+      throw new BadRequestException(
+        'Only the payment author can update this payment',
+      );
     }
 
     // Update payment
@@ -339,10 +488,13 @@ export class LoanService {
 
     // Check if user can delete this payment
     if (payment.authorId !== userId) {
-      throw new BadRequestException('Only the payment author can delete this payment');
+      throw new BadRequestException(
+        'Only the payment author can delete this payment',
+      );
     }
 
     const loanId = payment.loanId;
+
     await this.loanPaymentRepo.remove(payment);
 
     // Update loan amounts
@@ -352,50 +504,58 @@ export class LoanService {
     await this.sendPaymentNotifications(payment, 'deleted');
   }
 
-  async getSummary(summaryDto: LoanSummaryDto, userId: string) {
-    const { groupId, startDate, endDate } = summaryDto;
+  async getSummary(
+    summaryDto: LoanSummaryDto,
+    userId: string,
+  ): Promise<{
+    totalLoans: number;
+    activeLoans: number;
+    totalAmount: number;
+    totalInterest: number;
+    totalPaid: number;
+    totalRemaining: number;
+  }> {
+    const { startDate, endDate, loanType, status } = summaryDto;
 
     const queryBuilder = this.loanRepo
       .createQueryBuilder('loan')
-      .where('(loan.lenderId = :userId OR loan.borrowerId = :userId)', { userId });
+      .where('(loan.lenderId = :userId OR loan.borrowerId = :userId)', {
+        userId,
+      });
 
-    if (groupId) {
-      queryBuilder.andWhere('loan.groupId = :groupId', { groupId });
+    // Apply filters
+    if (startDate && endDate) {
+      queryBuilder.andWhere('loan.startDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
     }
 
-    if (startDate && endDate) {
-      queryBuilder.andWhere('loan.startDate BETWEEN :startDate AND :endDate', { startDate, endDate });
+    if (loanType) {
+      queryBuilder.andWhere('loan.loanType = :loanType', { loanType });
+    }
+
+    if (status) {
+      queryBuilder.andWhere('loan.status = :status', { status });
     }
 
     const loans = await queryBuilder.getMany();
 
-    // Calculate summary
-    const summary = {
-      totalLoans: loans.length,
-      activeLoans: loans.filter(loan => loan.status === 'active').length,
-      overdueLoans: loans.filter(loan => loan.status === 'overdue').length,
-      repaidLoans: loans.filter(loan => loan.status === 'repaid').length,
-      totalGiven: loans
-        .filter(loan => loan.loanType === 'given')
-        .reduce((sum, loan) => sum + Number(loan.principalAmount), 0),
-      totalTaken: loans
-        .filter(loan => loan.loanType === 'taken')
-        .reduce((sum, loan) => sum + Number(loan.principalAmount), 0),
-      totalInterestEarned: loans
-        .filter(loan => loan.loanType === 'given')
-        .reduce((sum, loan) => sum + Number(loan.interestAmount), 0),
-      totalInterestPaid: loans
-        .filter(loan => loan.loanType === 'taken')
-        .reduce((sum, loan) => sum + Number(loan.interestAmount), 0),
-      outstandingGiven: loans
-        .filter(loan => loan.loanType === 'given' && loan.status === 'active')
-        .reduce((sum, loan) => sum + Number(loan.remainingAmount), 0),
-      outstandingTaken: loans
-        .filter(loan => loan.loanType === 'taken' && loan.status === 'active')
-        .reduce((sum, loan) => sum + Number(loan.remainingAmount), 0),
-    };
+    const totalLoans = loans.length;
+    const activeLoans = loans.filter((loan) => loan.status === 'active').length;
+    const totalAmount = loans.reduce((sum, loan) => sum + loan.totalAmount, 0);
+    const totalInterest = loans.reduce((sum, loan) => sum + loan.interestAmount, 0);
+    const totalPaid = loans.reduce((sum, loan) => sum + loan.paidAmount, 0);
+    const totalRemaining = loans.reduce((sum, loan) => sum + loan.remainingAmount, 0);
 
-    return summary;
+    return {
+      totalLoans,
+      activeLoans,
+      totalAmount,
+      totalInterest,
+      totalPaid,
+      totalRemaining,
+    };
   }
 
   async checkOverdueLoans(): Promise<void> {
@@ -421,16 +581,16 @@ export class LoanService {
     principal: number,
     rate: number,
     type: InterestType,
-    startDate: string,
-    dueDate: string
+    startDate: Date,
+    dueDate: Date,
   ): number {
     if (rate === 0 || type === 'none') {
       return 0;
     }
 
-    const start = new Date(startDate);
-    const due = new Date(dueDate);
-    const days = Math.ceil((due.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const days = Math.ceil(
+      (dueDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     if (type === 'simple') {
       return (principal * rate * days) / (100 * 365);
@@ -449,7 +609,10 @@ export class LoanService {
 
     // Calculate total paid amount
     const payments = await this.loanPaymentRepo.find({ where: { loanId } });
-    const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    const totalPaid = payments.reduce(
+      (sum, payment) => sum + Number(payment.amount),
+      0,
+    );
 
     // Update loan amounts
     loan.paidAmount = totalPaid;
@@ -467,7 +630,10 @@ export class LoanService {
     await this.loanRepo.save(loan);
   }
 
-  private async sendLoanNotifications(loan: Loan, action: string): Promise<void> {
+  private async sendLoanNotifications(
+    loan: Loan,
+    action: string,
+  ): Promise<void> {
     const notifications = [];
 
     if (action === 'created') {
@@ -498,11 +664,16 @@ export class LoanService {
 
     // Send notifications
     for (const notification of notifications) {
-      await this.notificationService.sendInApp(notification);
+      if (notification.userId) {
+        await this.notificationService.sendInApp(notification.userId, notification.message);
+      }
     }
   }
 
-  private async sendPaymentNotifications(payment: LoanPayment, action: string): Promise<void> {
+  private async sendPaymentNotifications(
+    payment: LoanPayment,
+    action: string,
+  ): Promise<void> {
     const notifications = [];
 
     if (action === 'created') {
@@ -517,7 +688,9 @@ export class LoanService {
 
     // Send notifications
     for (const notification of notifications) {
-      await this.notificationService.sendInApp(notification);
+      if (notification.userId) {
+        await this.notificationService.sendInApp(notification.userId, notification.message);
+      }
     }
   }
 }
