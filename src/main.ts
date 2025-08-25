@@ -166,7 +166,7 @@ async function bootstrap() {
       ValidationError,
       SuccessResponse,
       BulkOperationResponse,
-      
+
       // Auth Request DTOs
       RegisterRequestDto,
       LoginRequestDto,
@@ -176,7 +176,7 @@ async function bootstrap() {
       ResetPasswordRequestDto,
       RequestEmailVerificationRequestDto,
       GoogleAuthRequestDto,
-      
+
       // Auth Response DTOs
       RegisterResponseDto,
       LoginResponseDto,
@@ -199,15 +199,19 @@ async function bootstrap() {
 
   // Setup Swagger UI and JSON endpoint
   SwaggerModule.setup('api/docs', app, document, swaggerCustomOptions);
-  
+
   // Setup OpenAPI JSON endpoint for debugging (without global prefix)
   app.use('/api-json', (req: any, res: any) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(document);
   });
 
-  console.log(`📚 Swagger documentation available at: http://localhost:${env.app.port}/api/docs`);
-  console.log(`📄 OpenAPI JSON schema available at: http://localhost:${env.app.port}/api-json`);
+  console.log(
+    `📚 Swagger documentation available at: http://localhost:${env.app.port}/api/docs`,
+  );
+  console.log(
+    `📄 OpenAPI JSON schema available at: http://localhost:${env.app.port}/api-json`,
+  );
 
   await app.listen(env.app.port, '0.0.0.0');
 }
