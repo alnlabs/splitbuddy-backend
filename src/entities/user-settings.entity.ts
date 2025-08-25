@@ -35,13 +35,13 @@ export class UserSettings {
   @Column({ default: true })
   reminders: boolean; // Enable reminders
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'uuid' })
   defaultGroupId: string | null; // Default group for new expenses
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'uuid' })
   defaultCategoryId: string | null; // Default category for new expenses
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'uuid' })
   defaultPaymentMethodId: string | null; // Default payment method
 
   @Column({ default: false })

@@ -36,20 +36,21 @@ check_docker() {
     print_success "Docker is running"
 }
 
-# Setup environment file
-setup_env() {
-    if [ ! -f ".env" ]; then
-        print_status "Creating environment file..."
-        if [ -f "env.prod.config" ]; then
-            cp env.prod.config .env
-            print_success "Environment file created from template"
-        else
-            print_error "No environment template found. Please create .env file manually."
-            exit 1
-        fi
-    else
-        print_success "Environment file already exists"
+# Check Doppler setup
+check_doppler() {
+    if ! command -v doppler &> /dev/null; then
+        print_error "Doppler CLI is not installed. Please install it first."
+        print_status "Install: https://cli.doppler.com/"
+        exit 1
     fi
+
+    if ! doppler me &> /dev/null; then
+        print_error "Not authenticated with Doppler. Please login first."
+        print_status "Run: doppler login"
+        exit 1
+    fi
+
+    print_success "Doppler is configured"
 }
 
 # Generate secure JWT secret
@@ -57,25 +58,20 @@ generate_jwt_secret() {
     openssl rand -base64 32
 }
 
-# Update JWT secret if needed
+# Update JWT secret in Doppler if needed
 update_jwt_secret() {
-    if grep -q "CHANGE-THIS-TO-SECURE-RANDOM-STRING" .env; then
-        print_status "Generating secure JWT secret..."
-        NEW_SECRET=$(generate_jwt_secret)
-        sed -i "s/CHANGE-THIS-TO-SECURE-RANDOM-STRING/$NEW_SECRET/" .env
-        print_success "JWT secret updated"
-    fi
+    print_status "JWT secret is managed by Doppler - no local updates needed"
 }
 
 # Build and deploy
 deploy() {
-    print_status "Building and deploying application..."
+    print_status "Building and deploying application with Doppler..."
 
     # Stop existing containers
     docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
 
-    # Build and start
-    docker-compose -f docker-compose.prod.yml up --build -d
+    # Build and start with Doppler
+    doppler run --project=splitbuddy-backend --config=prod -- docker-compose -f docker-compose.prod.yml up --build -d
 
     # Wait for services
     print_status "Waiting for services to start..."
@@ -83,11 +79,11 @@ deploy() {
 
     # Run migrations
     print_status "Running database migrations..."
-    docker-compose -f docker-compose.prod.yml exec -T backend npm run migration:run || true
+    doppler run --project=splitbuddy-backend --config=prod -- docker-compose -f docker-compose.prod.yml exec -T backend npm run migration:run || true
 
     # Create default data
     print_status "Creating default data..."
-    docker-compose -f docker-compose.prod.yml exec -T backend npm run create-default-data || true
+    doppler run --project=splitbuddy-backend --config=prod -- docker-compose -f docker-compose.prod.yml exec -T backend npm run create-default-data || true
 
     print_success "Deployment completed!"
 }
@@ -114,7 +110,7 @@ stop() {
 # Restart application
 restart() {
     print_status "Restarting application..."
-    docker-compose -f docker-compose.prod.yml restart
+    doppler run --project=splitbuddy-backend --config=prod -- docker-compose -f docker-compose.prod.yml restart
     print_success "Application restarted"
 }
 
@@ -172,17 +168,16 @@ help() {
     echo "  $0 logs      # View logs"
     echo ""
     echo "Quick Start:"
-    echo "  1. Copy env.prod.config to .env"
-    echo "  2. Edit .env with your settings"
-    echo "  3. Run: $0 deploy"
+echo "  1. Set up Doppler with your project and environments"
+echo "  2. Configure OAuth settings: ./scripts/update-oauth-configs.sh --env prod"
+echo "  3. Run: $0 deploy"
 }
 
 # Main script
 case "${1:-deploy}" in
     "deploy")
         check_docker
-        setup_env
-        update_jwt_secret
+        check_doppler
         deploy
         test
         ;;
