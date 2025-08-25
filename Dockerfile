@@ -4,6 +4,9 @@ FROM node:20
 # Set working directory
 WORKDIR /app
 
+# Install Doppler CLI
+RUN (curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh || wget -t 3 -qO- https://cli.doppler.com/install.sh) | sh
+
 # Accept build argument for skipping install
 ARG SKIP_INSTALL=false
 
@@ -25,5 +28,9 @@ RUN npm run build
 # Expose the backend port
 EXPOSE 5900
 
-# Start the app in production mode
-CMD ["npm", "run", "start:prod"]
+# Start the app with Doppler (if DOPPLER_TOKEN is provided) or fallback to direct start
+CMD if [ -n "$DOPPLER_TOKEN" ]; then \
+        doppler run -- npm run start:prod; \
+    else \
+        npm run start:prod; \
+    fi

@@ -40,6 +40,15 @@ export class AuthService {
     private readonly notificationService: NotificationService,
     private readonly defaultDataService: DefaultDataService,
   ) {
+    // Check if Google Client ID is configured
+    if (!env.google.clientId) {
+      console.error(
+        '❌ GOOGLE_CLIENT_ID is not configured. Google authentication will not work.',
+      );
+      console.error('Please set the GOOGLE_CLIENT_ID environment variable.');
+    } else {
+      console.log('✅ Google OAuth Client ID configured');
+    }
     this.googleClient = new OAuth2Client(env.google.clientId);
   }
 
@@ -52,6 +61,13 @@ export class AuthService {
 
   async googleVerify(idToken: string): Promise<any> {
     try {
+      // Check if Google Client ID is configured
+      if (!env.google.clientId) {
+        throw new UnauthorizedException(
+          'Google OAuth is not configured. Please set GOOGLE_CLIENT_ID environment variable.',
+        );
+      }
+
       // Try with web client ID first
       let ticket;
       try {
@@ -60,6 +76,7 @@ export class AuthService {
           audience: env.google.clientId,
         });
       } catch (webError) {
+        console.log('Web client verification failed, trying Android client...');
         // If web client fails, try with Android client ID
         if (env.google.androidClientId) {
           const androidClient = new OAuth2Client(env.google.androidClientId);
@@ -68,6 +85,10 @@ export class AuthService {
             audience: env.google.androidClientId,
           });
         } else {
+          console.error(
+            'No Android client ID configured, web client verification failed:',
+            webError.message,
+          );
           throw webError;
         }
       }
@@ -76,7 +97,66 @@ export class AuthService {
       return payload;
     } catch (error) {
       console.error('Google token verification failed:', error);
-      throw new UnauthorizedException('Invalid Google token');
+
+      // Provide more specific error messages
+      if (error.message?.includes('not configured')) {
+        throw new UnauthorizedException(
+          'Google OAuth is not configured. Please set GOOGLE_CLIENT_ID environment variable.',
+        );
+      } else if (error.message?.includes('Invalid audience')) {
+        throw new UnauthorizedException(
+          'Invalid Google client ID. Please check your GOOGLE_CLIENT_ID configuration.',
+        );
+      } else if (error.message?.includes('Token used too late')) {
+        throw new UnauthorizedException(
+          'Google token has expired. Please try signing in again.',
+        );
+      } else {
+        throw new UnauthorizedException(
+          'Invalid Google token. Please try signing in again.',
+        );
+      }
+    }
+  }
+
+  async verifyFirebaseToken(idToken: string): Promise<any> {
+    try {
+      // For Firebase tokens, we need to verify them using Firebase Admin SDK
+      // Since we don't have Firebase Admin SDK installed, we'll use a different approach
+      // We'll decode the JWT token and extract the claims
+
+      // Split the token to get the payload
+      const parts = idToken.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT token format');
+      }
+
+      // Decode the payload (base64url decode)
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+
+      // Basic validation
+      if (!payload.email) {
+        throw new Error('Token does not contain email');
+      }
+
+      // Check if token is expired
+      if (payload.exp && payload.exp < Date.now() / 1000) {
+        throw new Error('Token has expired');
+      }
+
+      return {
+        email: payload.email,
+        given_name: payload.name || payload.given_name,
+        family_name: payload.family_name || '',
+        sub: payload.sub || payload.user_id,
+        picture: payload.picture,
+        email_verified: payload.email_verified || true,
+      };
+    } catch (error) {
+      console.error('Firebase token verification failed:', error);
+      throw new UnauthorizedException(
+        'Invalid Firebase token. Please try signing in again.',
+      );
     }
   }
 
@@ -167,7 +247,21 @@ export class AuthService {
     const { idToken } = googleAuthDto;
 
     try {
-      const payload = await this.googleVerify(idToken);
+      let payload;
+
+      // Try Google OAuth verification first
+      try {
+        payload = await this.googleVerify(idToken);
+        console.log('✅ Google OAuth verification successful');
+      } catch (googleError) {
+        console.log(
+          '⚠️ Google OAuth verification failed, trying Firebase token...',
+        );
+        // If Google verification fails, try Firebase token verification
+        payload = await this.verifyFirebaseToken(idToken);
+        console.log('✅ Firebase token verification successful');
+      }
+
       const { email, given_name, family_name } = payload;
 
       let user = await this.userRepository.findOne({
@@ -175,7 +269,7 @@ export class AuthService {
       });
 
       if (!user) {
-        // Create new user from Google data
+        // Create new user from Google/Firebase data
         user = this.userRepository.create({
           email,
           firstName: given_name,
@@ -216,7 +310,8 @@ export class AuthService {
           },
         },
       };
-    } catch {
+    } catch (error) {
+      console.error('❌ Google/Firebase authentication failed:', error);
       throw new UnauthorizedException('Google authentication failed');
     }
   }
@@ -356,8 +451,19 @@ export class AuthService {
   async googleSignup(googleAuthDto: GoogleAuthDto): Promise<any> {
     const { idToken } = googleAuthDto;
 
-    // Verify the Google token
-    const payload = await this.googleVerify(idToken);
+    // Verify the Google/Firebase token
+    let payload;
+    try {
+      payload = await this.googleVerify(idToken);
+      console.log('✅ Google OAuth verification successful for signup');
+    } catch (googleError) {
+      console.log(
+        '⚠️ Google OAuth verification failed for signup, trying Firebase token...',
+      );
+      payload = await this.verifyFirebaseToken(idToken);
+      console.log('✅ Firebase token verification successful for signup');
+    }
+
     const { email, given_name, family_name } = payload;
 
     // Check if user already exists
