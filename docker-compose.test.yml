@@ -52,7 +52,7 @@ services:
     env_file:
       - .env.test
     ports:
-      - '6380:6379' # Different port to avoid conflict with production
+      - '6381:6379' # Different port to avoid conflict with production
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
