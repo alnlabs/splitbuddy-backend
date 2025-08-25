@@ -162,7 +162,7 @@ export class AuthController {
     description: 'Internal server error',
     type: ApiError
   })
-  async register(@Body() dto: RegisterRequestDto) {
+  async register(@Body() dto: RegisterRequestDto): Promise<RegisterResponseDto> {
     return this.authService.register(dto);
   }
 
@@ -248,7 +248,7 @@ export class AuthController {
     description: 'Internal server error',
     type: ApiError
   })
-  async login(@Body() dto: LoginRequestDto) {
+  async login(@Body() dto: LoginRequestDto): Promise<LoginResponseDto> {
     return this.authService.login(dto);
   }
 

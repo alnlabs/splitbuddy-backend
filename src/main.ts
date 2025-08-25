@@ -6,6 +6,45 @@ import { env, logEnvironment } from './config/env.config';
 import { ValidationPipe } from '@nestjs/common';
 import { swaggerConfig, swaggerCustomOptions } from './config/swagger.config';
 
+// Import all DTOs to ensure they are included in the Swagger schema
+import {
+  ApiResponse,
+  PaginatedResponse,
+  ApiError,
+  ValidationError,
+  SuccessResponse,
+  BulkOperationResponse,
+} from './common/dto';
+
+import {
+  RegisterRequestDto,
+  LoginRequestDto,
+  UpdateProfileRequestDto,
+  ChangePasswordRequestDto,
+  RequestPasswordResetRequestDto,
+  ResetPasswordRequestDto,
+  RequestEmailVerificationRequestDto,
+  GoogleAuthRequestDto,
+} from './auth/dto';
+
+import {
+  RegisterResponseDto,
+  LoginResponseDto,
+  ProfileResponseDto,
+  ProfileUpdateResponseDto,
+  PasswordChangeResponseDto,
+  PasswordResetRequestResponseDto,
+  PasswordResetResponseDto,
+  EmailVerificationRequestResponseDto,
+  EmailVerificationResponseDto,
+  GoogleAuthResponseDto,
+  GoogleTokenVerificationResponseDto,
+  GoogleTokenVerificationDataDto,
+  LogoutResponseDto,
+  UserProfileResponseDto,
+  AuthResponseDto,
+} from './auth/dto';
+
 // Debug: Log environment variables
 logEnvironment();
 
@@ -119,13 +158,56 @@ async function bootstrap() {
 
   // Enhanced Swagger setup with comprehensive documentation
   const document = SwaggerModule.createDocument(app, swaggerConfig, {
-    extraModels: [],
+    extraModels: [
+      // Common DTOs
+      ApiResponse,
+      PaginatedResponse,
+      ApiError,
+      ValidationError,
+      SuccessResponse,
+      BulkOperationResponse,
+      
+      // Auth Request DTOs
+      RegisterRequestDto,
+      LoginRequestDto,
+      UpdateProfileRequestDto,
+      ChangePasswordRequestDto,
+      RequestPasswordResetRequestDto,
+      ResetPasswordRequestDto,
+      RequestEmailVerificationRequestDto,
+      GoogleAuthRequestDto,
+      
+      // Auth Response DTOs
+      RegisterResponseDto,
+      LoginResponseDto,
+      ProfileResponseDto,
+      ProfileUpdateResponseDto,
+      PasswordChangeResponseDto,
+      PasswordResetRequestResponseDto,
+      PasswordResetResponseDto,
+      EmailVerificationRequestResponseDto,
+      EmailVerificationResponseDto,
+      GoogleAuthResponseDto,
+      GoogleTokenVerificationResponseDto,
+      GoogleTokenVerificationDataDto,
+      LogoutResponseDto,
+      UserProfileResponseDto,
+      AuthResponseDto,
+    ],
     deepScanRoutes: true,
   });
 
+  // Setup Swagger UI and JSON endpoint
   SwaggerModule.setup('api/docs', app, document, swaggerCustomOptions);
+  
+  // Setup OpenAPI JSON endpoint for debugging (without global prefix)
+  app.use('/api-json', (req: any, res: any) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(document);
+  });
 
   console.log(`📚 Swagger documentation available at: http://localhost:${env.app.port}/api/docs`);
+  console.log(`📄 OpenAPI JSON schema available at: http://localhost:${env.app.port}/api-json`);
 
   await app.listen(env.app.port, '0.0.0.0');
 }
