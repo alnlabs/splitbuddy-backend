@@ -153,65 +153,127 @@ If you prefer local PostgreSQL:
 
 ## 🔧 **Environment Variables**
 
-All environment variables are managed through Doppler. Here's what you need to configure:
+All environment variables are managed through Doppler. Here's the complete list of environment variables used in the project:
 
-### **Database Configuration**
+### **📊 Database Configuration**
 ```bash
-DB_HOST=postgres          # Docker service name
-DB_PORT=5432              # Internal port
-DB_USERNAME=splitbuddy_user_dev
-DB_PASSWORD=your_password
-DB_DATABASE=splitbuddy_dev
+DB_HOST=postgres                    # Database host (Docker service name)
+DB_PORT=5432                        # Database port (internal)
+DB_USERNAME=splitbuddy_user_dev     # Database username
+DB_PASSWORD=your_secure_password    # Database password
+DB_DATABASE=splitbuddy_dev          # Database name
+DB_NAME=splitbuddy_dev              # Alternative database name (legacy)
 ```
 
-### **Redis Configuration**
+### **⚡ Redis Configuration**
 ```bash
-REDIS_HOST=redis          # Docker service name
-REDIS_PORT=6379           # Internal port
+REDIS_HOST=redis                    # Redis host (Docker service name)
+REDIS_PORT=6379                     # Redis port (internal)
 ```
 
-### **JWT Configuration**
+### **🔐 JWT Configuration**
 ```bash
-JWT_SECRET=your-jwt-secret
+JWT_SECRET=your-jwt-secret          # JWT signing secret (generate secure random string)
 ```
 
-### **SMTP Configuration**
+### **📧 SMTP Configuration (Email Notifications)**
 ```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SMTP_FROM=your-email@gmail.com
+SMTP_HOST=smtp.gmail.com            # SMTP server host
+SMTP_PORT=587                       # SMTP server port
+SMTP_USER=your-email@gmail.com      # SMTP username/email
+SMTP_PASS=your-app-password         # SMTP password/app password
+SMTP_FROM=your-email@gmail.com      # From email address
 ```
 
-### **Google OAuth Configuration**
+### **🔑 Google OAuth Configuration**
+
+#### **Platform-Specific Client IDs**
 ```bash
-# Platform-specific client IDs
 GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
 GOOGLE_ANDROID_CLIENT_ID=your-android-client-id.apps.googleusercontent.com
 GOOGLE_IOS_CLIENT_ID=your-ios-client-id.apps.googleusercontent.com
+```
 
-# Callback URLs
+#### **Platform-Specific Callback URLs**
+```bash
 GOOGLE_WEB_CALLBACK_URL=http://localhost:5900/api/v1/auth/google/callback
 GOOGLE_ANDROID_CALLBACK_URL=com.splitbuddy.app:/oauth2redirect
 GOOGLE_IOS_CALLBACK_URL=com.splitbuddy.app:/oauth2redirect
+```
 
-# Shared secret
+#### **Shared OAuth Configuration**
+```bash
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
-### **App Configuration**
+#### **Backward Compatibility (Legacy)**
 ```bash
-APP_PORT=5900
-NODE_ENV=development      # or test, production
-CORS_ORIGIN=http://localhost:3001
+GOOGLE_CLIENT_ID=your-web-client-id.apps.googleusercontent.com    # Same as GOOGLE_WEB_CLIENT_ID
+GOOGLE_CALLBACK_URL=http://localhost:5900/api/v1/auth/google/callback  # Same as GOOGLE_WEB_CALLBACK_URL
 ```
 
-### **Queue Configuration**
+### **🌐 App Configuration**
 ```bash
+APP_PORT=5900                       # Application port
+PORT=5900                           # Alternative port variable
+NODE_ENV=development                # Environment: development, test, production
+CORS_ORIGIN=http://localhost:3001   # CORS allowed origin
+```
+
+### **📨 Queue Configuration (Bull/Redis)**
+```bash
+EMAIL_QUEUE_NAME=email-queue-dev           # Email processing queue name
+NOTIFICATION_QUEUE_NAME=notification-queue-dev  # Notification processing queue name
+```
+
+### **🗄️ PostgreSQL Container Variables (Docker)**
+```bash
+POSTGRES_DB=splitbuddy_dev          # PostgreSQL database name
+POSTGRES_USER=splitbuddy_user_dev   # PostgreSQL username
+POSTGRES_PASSWORD=your_password     # PostgreSQL password
+```
+
+### **🔧 Environment-Specific Values**
+
+#### **Development Environment**
+```bash
+NODE_ENV=development
+APP_PORT=5900
+DB_DATABASE=splitbuddy_dev
+DB_USERNAME=splitbuddy_user_dev
 EMAIL_QUEUE_NAME=email-queue-dev
 NOTIFICATION_QUEUE_NAME=notification-queue-dev
+GOOGLE_WEB_CALLBACK_URL=http://localhost:5900/api/v1/auth/google/callback
 ```
+
+#### **Testing Environment**
+```bash
+NODE_ENV=test
+APP_PORT=5901
+DB_DATABASE=splitbuddy_test
+DB_USERNAME=splitbuddy_user_test
+EMAIL_QUEUE_NAME=email-queue-test
+NOTIFICATION_QUEUE_NAME=notification-queue-test
+GOOGLE_WEB_CALLBACK_URL=http://localhost:5901/api/v1/auth/google/callback
+```
+
+#### **Production Environment**
+```bash
+NODE_ENV=production
+APP_PORT=5900
+DB_DATABASE=splitbuddy_prod
+DB_USERNAME=splitbuddy_user_prod
+EMAIL_QUEUE_NAME=email-queue-prod
+NOTIFICATION_QUEUE_NAME=notification-queue-prod
+GOOGLE_WEB_CALLBACK_URL=https://your-domain.com/api/v1/auth/google/callback
+```
+
+### **🔒 Security Notes**
+- **JWT_SECRET**: Generate a secure random string (32+ characters)
+- **DB_PASSWORD**: Use strong, unique passwords for each environment
+- **SMTP_PASS**: Use app-specific passwords, not your main email password
+- **GOOGLE_CLIENT_SECRET**: Keep this secret and secure
+- **All sensitive data**: Stored securely in Doppler, not in version control
 
 ---
 
