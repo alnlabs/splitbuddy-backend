@@ -8,55 +8,88 @@ import {
   Delete,
 } from '@nestjs/common';
 import { GroupMemberService } from './group-member.service';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  CreateGroupMemberDto,
+  UpdateGroupMemberDto,
+  GroupMemberResponseDto,
+} from './group-member.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 
-class CreateGroupMemberDto {
-  @ApiProperty() groupId: string;
-  @ApiProperty({ required: false }) userId?: string;
-  @ApiProperty() email: string;
-  @ApiProperty({ required: false }) fullName?: string;
-  @ApiProperty({ required: false }) status?: string;
-  @ApiProperty({ required: false }) isRegistered?: boolean;
-  @ApiProperty({ required: false }) invitedAt?: Date;
-  @ApiProperty({ required: false }) acceptedAt?: Date;
-}
-
-class UpdateGroupMemberDto {
-  @ApiProperty({ required: false }) userId?: string;
-  @ApiProperty({ required: false }) email?: string;
-  @ApiProperty({ required: false }) fullName?: string;
-  @ApiProperty({ required: false }) status?: string;
-  @ApiProperty({ required: false }) isRegistered?: boolean;
-  @ApiProperty({ required: false }) invitedAt?: Date;
-  @ApiProperty({ required: false }) acceptedAt?: Date;
-}
-
+@ApiTags('Group Members')
 @Controller('group-member')
 export class GroupMemberController {
   constructor(private readonly groupMemberService: GroupMemberService) {}
 
   @Post()
-  async create(@Body() dto: CreateGroupMemberDto) {
+  @ApiOperation({ summary: 'Create a new group member' })
+  @ApiResponse({
+    status: 201,
+    description: 'Group member created successfully',
+    type: GroupMemberResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async create(
+    @Body() dto: CreateGroupMemberDto,
+  ): Promise<GroupMemberResponseDto> {
     return this.groupMemberService.create(dto);
   }
 
   @Get(':id')
-  async getById(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Get a group member by ID' })
+  @ApiParam({ name: 'id', description: 'Group member ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Group member found',
+    type: GroupMemberResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Group member not found' })
+  async getById(
+    @Param('id') id: string,
+  ): Promise<GroupMemberResponseDto | null> {
     return this.groupMemberService.getById(id);
   }
 
   @Get()
-  async list() {
+  @ApiOperation({ summary: 'Get all group members' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of group members',
+    type: [GroupMemberResponseDto],
+  })
+  async list(): Promise<GroupMemberResponseDto[]> {
     return this.groupMemberService.list();
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateGroupMemberDto) {
+  @ApiOperation({ summary: 'Update a group member' })
+  @ApiParam({ name: 'id', description: 'Group member ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Group member updated successfully',
+    type: GroupMemberResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Group member not found' })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateGroupMemberDto,
+  ): Promise<GroupMemberResponseDto | null> {
     return this.groupMemberService.update(id, dto);
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Delete a group member' })
+  @ApiParam({ name: 'id', description: 'Group member ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Group member deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        deleted: { type: 'boolean', example: true },
+      },
+    },
+  })
+  async delete(@Param('id') id: string): Promise<{ deleted: boolean }> {
     return this.groupMemberService.delete(id);
   }
 }
