@@ -460,6 +460,33 @@ export class GoogleAuthResponseDto {
 }
 
 /**
+ * Google Token Verification Data DTO
+ * Nested data structure for token verification response
+ */
+export class GoogleTokenVerificationDataDto {
+  @ApiProperty({
+    description: 'Whether the token is valid',
+    example: true
+  })
+  valid: boolean;
+
+  @ApiProperty({
+    description: 'User information from the token',
+    example: {
+      email: 'john.doe@example.com',
+      name: 'John Doe',
+      picture: 'https://example.com/avatar.jpg'
+    },
+    required: false
+  })
+  userInfo?: {
+    email: string;
+    name: string;
+    picture?: string;
+  };
+}
+
+/**
  * Google Token Verification Response DTO
  * Response for Google token verification endpoint
  */
@@ -473,27 +500,7 @@ export class GoogleTokenVerificationResponseDto {
   @ApiProperty({
     description: 'Token verification data'
   })
-  data: {
-    @ApiProperty({
-      description: 'Whether the token is valid',
-      example: true
-    })
-    valid: boolean;
-
-    @ApiProperty({
-      description: 'User information from the token',
-      example: {
-        email: 'john.doe@example.com',
-        name: 'John Doe',
-        picture: 'https://example.com/avatar.jpg'
-      }
-    })
-    userInfo?: {
-      email: string;
-      name: string;
-      picture?: string;
-    };
-  };
+  data: GoogleTokenVerificationDataDto;
 
   @ApiProperty({
     description: 'Success message',
